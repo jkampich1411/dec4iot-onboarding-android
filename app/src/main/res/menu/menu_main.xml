@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="run.jkdev.dec4iot.jetpack.MainActivity">
+    <item
+        android:id="@+id/action_check_modules"
+        android:orderInCategory="100"
+        android:title="@string/action_check_modules"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_check_permissions"
+        android:orderInCategory="100"
+        android:title="@string/action_check_permissions"
+        app:showAsAction="never" />
+</menu>

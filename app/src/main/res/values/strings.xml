@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name" translatable="false">dec4IoT Onboarding</string>
+
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="qr_fragment_label">Scan your QR Code</string>
+    <string name="qr_success_fragment_label">QR Code scan result</string>
+    <string name="bangle_js_fragment_label">Bangle.Js</string>
+
+    <string name="next">Next</string>
+
+    <!-- Haha funny lorem ipsum -->
+    <string name="lorem_ipsum">There would be a lorem ipsum here! Instead have a queen song: One, two, three, four, one! Yeah. Okay. Don\'t do it. Don\'t you try, baby. Don\'t do that (Don\'t, don\'t, don\'t). Don\'t do that (You got a good thing goin\' now). Don\'t do it, don\'t do it, don\'t. Don\'t try suicide, nobody\'s worth it. Don\'t try suicide, nobody cares. Don\'t try suicide, you\'re just gonna hate it. Don\'t try suicide, nobody gives a damn. So you think it\'s the easy way out?. Think you\'re gonna slash your wrists this time?. Baby, when you do it, all you do is get on my t*ts. Don\'t do that (Try, try, try, baby). Don\'t do that (You got a good thing goin\' now). Don\'t do it, don\'t do it, don\'t. Don\'t try suicide, nobody\'s worth it. Don\'t try suicide, nobody cares. Don\'t try suicide, you\'re just gonna hate it. Don\'t try suicide, nobody gives a damn. You need help. Look at yourself, you need help (Yeah). You need life. So don\'t hang yourself. It\'s okay, okay, okay, okay. You just can\'t be a prick teaser all of the time. A little bit attention? You got it. Need some affection? You got it (Hey). Suicide, suicide, suicide bid (Oh). Suicide, suicide, suicide bid (Uh). Suicide (Hey). Don\'t do it, don\'t do it, don\'t do it, babe (Yeah). Don\'t do it, don\'t do it, don\'t do it! Hey. Yeah. Don\'t put your neck on the line. Don\'t drown on me, babe. Blow your brains out. Don\'t do that (Yeah). Don\'t do that (You got a good thing going, baby). Don\'t do it, (No) don\'t do it, (No!) don\'t. Don\'t try suicide, nobody\'s worth it. Don\'t try suicide, nobody cares. Don\'t try suicide, you\'re just gonna hate it. Don\'t try suicide, nobody gives, nobody gives. Nobody gives a damn. Okay</string>
+
+    <!-- Modules Check -->
+    <string name="action_check_modules">Check for Modules</string>
+    <string name="modules_available_toast">Modules Available! 🥳</string>
+    <string name="modules_unavailable_toast">Modules Unavailable! 😭</string>
+
+    <!-- Permissions Check -->
+    <string name="action_check_permissions">Check for Permissions</string>
+    <string name="permissions_granted">Permissions granted! 🥳</string>
+
+    <!-- Wrong QR Code -->
+    <string name="qr_no_support">QR code not created by dec4IoT!</string>
+    <string name="qr_no_support_button">Try again</string>
+
+    <!-- Select your Device -->
+    <string name="select_model">Select your device</string>
+    <string name="select_banglejs">Bangle.Js</string>
+    <string name="select_puckjs">Puck.Js</string>
+
+    <!-- Puck JS Detection -->
+    <string name="fragment_puckjs">PuckJs Detection</string>
+    <string name="touch_puckjs">Please touch your PuckJS to the back of your device!</string>
+    <string name="continue_puckjs">Continue</string>
+
+    <!-- Device Detection -->
+    <string name="no_dec4iot_devicedetection">This device cannot be programmed for use in Dec4IoT</string>
+
+</resources>
