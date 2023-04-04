@@ -34,7 +34,9 @@
             app:argType="string" />
         <action
             android:id="@+id/action_qrSuccessFragment_to_QrScanFragment2"
-            app:destination="@id/QrScanFragment" >
+            app:destination="@id/QrScanFragment"
+            app:popUpTo="@id/qrSuccessFragment"
+            app:popUpToInclusive="true">
             <argument
                 android:name="qr_res"
                 android:defaultValue="null" />
@@ -79,8 +81,8 @@
     <fragment
         android:id="@+id/puckJsWritingFragment"
         android:name="run.jkdev.dec4iot.jetpack.PuckJsWritingFragment"
-        android:label="fragment_puck_js_writing"
-        tools:layout="@layout/fragment_puck_js_writing" >
+        android:label="@string/puckjs_writing_fragment_label"
+        tools:layout="@layout/fragment_puck_js_writing">
         <argument
             android:name="sensorId"
             app:argType="string" />
@@ -92,6 +94,25 @@
             app:argType="string" />
         <action
             android:id="@+id/action_puckJsWritingFragment_to_QrScanFragment"
-            app:destination="@id/QrScanFragment" />
+            app:destination="@id/QrScanFragment"
+            app:popUpTo="@id/puckJsWritingFragment"
+            app:popUpToInclusive="true" />
+        <argument
+            android:name="puckJsName"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_puckJsWritingFragment_to_onboardingDone"
+            app:destination="@id/onboardingDone" />
+    </fragment>
+    <fragment
+        android:id="@+id/onboardingDone"
+        android:name="run.jkdev.dec4iot.jetpack.OnboardingDone"
+        android:label="fragment_onboarding_done"
+        tools:layout="@layout/fragment_onboarding_done" >
+        <action
+            android:id="@+id/action_onboardingDone_to_FirstFragment"
+            app:destination="@id/FirstFragment"
+            app:popUpTo="@id/onboardingDone"
+            app:popUpToInclusive="true" />
     </fragment>
 </navigation>

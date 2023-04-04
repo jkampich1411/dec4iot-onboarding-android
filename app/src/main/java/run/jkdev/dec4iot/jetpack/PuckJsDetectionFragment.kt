@@ -23,6 +23,8 @@ import androidx.navigation.fragment.navArgs
 import run.jkdev.dec4iot.jetpack.ble.BleAdapter
 import run.jkdev.dec4iot.jetpack.ble.Espruino
 import run.jkdev.dec4iot.jetpack.interfaces.NordicUUIDs
+import java.util.*
+import kotlin.concurrent.timerTask
 
 class PuckJsDetectionFragment : Fragment() {
     private val args: PuckJsDetectionFragmentArgs by navArgs()
@@ -45,6 +47,8 @@ class PuckJsDetectionFragment : Fragment() {
 
     private var selection: BluetoothGatt? = null
     private val lastSelection = MutableLiveData<BluetoothGatt?>(null)
+
+    private var buttonsEnabled = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -94,7 +98,7 @@ class PuckJsDetectionFragment : Fragment() {
     @SuppressLint("MissingPermission")
     private val continueButtonListener = OnClickListener {
         if(selection == null) {
-            Toast.makeText(publicApplicationContext, R.string.no_device_selected_stop, Toast.LENGTH_LONG)
+            Toast.makeText(publicApplicationContext, R.string.no_device_selected_stop, Toast.LENGTH_LONG).show()
             publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
             return@OnClickListener
         }
@@ -110,7 +114,7 @@ class PuckJsDetectionFragment : Fragment() {
         }
         connectedDevices.clear()
 
-        val act = PuckJsDetectionFragmentDirections.actionPuckJsFragmentToPuckJsWritingFragment(sensorId, endpoint, selection!!.device.address)
+        val act = PuckJsDetectionFragmentDirections.actionPuckJsFragmentToPuckJsWritingFragment(sensorId, endpoint, selection!!.device.address, selection!!.device.name)
         findNavController().navigate(act)
     }
 
@@ -126,13 +130,24 @@ class PuckJsDetectionFragment : Fragment() {
 
     @SuppressLint("MissingPermission")
     private val deviceButtonOnClickListener = OnClickListener {
+        if(!buttonsEnabled) { return@OnClickListener }
+        if(buttonsEnabled) {
+            buttonsEnabled = false
+
+            Timer().schedule(timerTask {
+                requireActivity().runOnUiThread {
+                    buttonsEnabled = true
+                }
+            }, 2000)
+        }
+
         val btn = it.findViewById<Button>(it.id)
 
         val device = deviceButtonMutableMap[btn]
         if(!le.isDeviceConnected(device!!.address)) {
             device.connectGatt(publicApplicationContext, false, gattConnectionCallback)
 
-            val infoText = pView!!.findViewById<TextView>(R.id.infoText)
+            val infoText = pView!!.findViewById<TextView>(R.id.infoText_puckJs)
             infoText.textSize = 26F
             infoText.text =
                 getString(R.string.selected_device, device.name)
@@ -208,7 +223,7 @@ class PuckJsDetectionFragment : Fragment() {
         }
         connectedDevices.clear()
 
-        val infoText = pView!!.findViewById<TextView>(R.id.infoText)
+        val infoText = pView!!.findViewById<TextView>(R.id.infoText_puckJs)
         infoText.textSize = 18F
         infoText.text =
             getString(R.string.choose_puckjs)

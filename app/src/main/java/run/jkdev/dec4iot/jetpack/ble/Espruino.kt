@@ -17,8 +17,8 @@ import java.util.*
 class Espruino {
     val discoveryCmdPuckJs = "discovery()\n".toByteArray(Charsets.UTF_8)
     val discoveredCmdPuckJs = "discovered()\n".toByteArray(Charsets.UTF_8)
-    fun writeConfigCmdPuckJs(fileName: String, id: String, endpoint: String): ByteArray {
-        return "writeConfig('$fileName','$id','$endpoint')\n".toByteArray(Charsets.UTF_8)
+    fun writeConfigCmdPuckJs(fileName: String, id: String, endpoint: String, sensorUpdateInterval: String): ByteArray {
+        return "writeConfig('$fileName','$id','$endpoint','$sensorUpdateInterval')\n".toByteArray(Charsets.UTF_8)
     }
 
 
