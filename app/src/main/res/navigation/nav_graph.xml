@@ -72,5 +72,26 @@
         <action
             android:id="@+id/action_puckJsFragment_to_QrScanFragment"
             app:destination="@id/QrScanFragment" />
+        <action
+            android:id="@+id/action_puckJsFragment_to_puckJsWritingFragment"
+            app:destination="@id/puckJsWritingFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/puckJsWritingFragment"
+        android:name="run.jkdev.dec4iot.jetpack.PuckJsWritingFragment"
+        android:label="fragment_puck_js_writing"
+        tools:layout="@layout/fragment_puck_js_writing" >
+        <argument
+            android:name="sensorId"
+            app:argType="string" />
+        <argument
+            android:name="endpoint"
+            app:argType="string" />
+        <argument
+            android:name="puckJsMac"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_puckJsWritingFragment_to_QrScanFragment"
+            app:destination="@id/QrScanFragment" />
     </fragment>
 </navigation>

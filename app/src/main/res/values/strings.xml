@@ -37,6 +37,8 @@
     <string name="continue_puckjs">Continue</string>
 
     <!-- Device Detection -->
+    <string name="selected_device">Selected Device: %s</string>
     <string name="no_dec4iot_devicedetection">This device cannot be programmed for use in Dec4IoT</string>
+    <string name="no_device_selected_stop">Please select a device before continuing!</string>
 
 </resources>

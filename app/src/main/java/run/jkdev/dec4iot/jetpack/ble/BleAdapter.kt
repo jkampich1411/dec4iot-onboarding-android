@@ -1,7 +1,9 @@
 package run.jkdev.dec4iot.jetpack.ble
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -32,4 +34,17 @@ class BleAdapter {
 
             return bluetoothAdapter
         }
+
+    @SuppressLint("MissingPermission")
+    fun isDeviceConnected(deviceAddress: String): Boolean {
+        // Check if the device is currently connected
+        val connectedDevices = bluetoothManager!!.getConnectedDevices(BluetoothProfile.GATT)
+        for (device in connectedDevices) {
+            if(device.address == deviceAddress) { return true }
+        }
+
+        // Device is not connected
+        return false
+    }
+
 }

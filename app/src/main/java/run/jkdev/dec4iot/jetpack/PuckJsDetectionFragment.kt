@@ -2,40 +2,34 @@ package run.jkdev.dec4iot.jetpack
 
 import android.annotation.SuppressLint
 import android.bluetooth.*
-import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
 import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.content.Context
-import android.graphics.Color
 import android.os.Bundle
+import android.os.VibrationEffect
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.FrameLayout
 import android.widget.LinearLayout
-import androidx.core.view.children
+import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import run.jkdev.dec4iot.jetpack.ble.BleAdapter
 import run.jkdev.dec4iot.jetpack.ble.Espruino
 import run.jkdev.dec4iot.jetpack.interfaces.NordicUUIDs
 
-
-/**
- * A simple [Fragment] subclass.
- * Use the [PuckJsDetectionFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class PuckJsDetectionFragment : Fragment() {
     private val args: PuckJsDetectionFragmentArgs by navArgs()
 
     private var sensorId: String = ""
     private var endpoint: String = ""
+
     private var pView: View? = null
 
     private val espruino = Espruino()
@@ -45,12 +39,12 @@ class PuckJsDetectionFragment : Fragment() {
     private val foundDevicesLiveData = MutableLiveData<MutableSet<BluetoothDevice>>()
 
     private val deviceButtonMutableMap = mutableMapOf<Button, BluetoothDevice>()
-    private val deviceServiceMutableMap = mutableMapOf<BluetoothGatt, BluetoothGattService?>()
-    private val deviceServicesDiscoveredLiveDataMutableMap = mutableMapOf<BluetoothGatt, MutableLiveData<Boolean>>()
-    private val deviceConnections = mutableSetOf<BluetoothGatt?>()
 
-    private val currentSelection = MutableLiveData<BluetoothGatt>()
-    private var lastSelection: BluetoothGatt? = null
+    private val connectedDevices = mutableSetOf<BluetoothGatt>()
+    private val deviceService = mutableMapOf<BluetoothGatt, BluetoothGattService?>()
+
+    private var selection: BluetoothGatt? = null
+    private val lastSelection = MutableLiveData<BluetoothGatt?>(null)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,6 +63,7 @@ class PuckJsDetectionFragment : Fragment() {
         this.endpoint = args.endpoint
 
         this.pView = view
+        view.findViewById<Button>(R.id.continueButton).setOnClickListener(continueButtonListener)
 
         espruino.addCallback(this.scanCallback)
         espruino.startScanning()
@@ -86,28 +81,37 @@ class PuckJsDetectionFragment : Fragment() {
             }
         }
 
-        currentSelection.observeForever {
-            if(deviceServicesDiscoveredLiveDataMutableMap[lastSelection]!!.value == true) {
-                val service = deviceServiceMutableMap[lastSelection]
-                val chara = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-                lastSelection!!.writeCharacteristic(chara, espruino.discoveredCmd, WRITE_TYPE_NO_RESPONSE)
-                lastSelection!!.disconnect()
-            }
-        }
-
-        deviceServicesDiscoveredLiveDataMutableMap.forEach { (t, u) ->
-            u.observeForever {
-                if(it == true) {
-                    servicesDiscoveredSendCommands(t, deviceServiceMutableMap[t]!!)
-                }
+        lastSelection.observeForever {
+            if(it != null && le.isDeviceConnected(it.device.address) && deviceService[it] != null) {
+                val service = deviceService[it]
+                val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                it.disconnect()
             }
         }
     }
 
-    private fun servicesDiscoveredSendCommands(gatt: BluetoothGatt, service: BluetoothGattService) {
-        val charac = service.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-        gatt.writeCharacteristic(charac, espruino.discoveryCmd, WRITE_TYPE_NO_RESPONSE)
+    @SuppressLint("MissingPermission")
+    private val continueButtonListener = OnClickListener {
+        if(selection == null) {
+            Toast.makeText(publicApplicationContext, R.string.no_device_selected_stop, Toast.LENGTH_LONG)
+            publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
+            return@OnClickListener
+        }
 
+        espruino.stopScanning()
+        connectedDevices.forEach {
+            if(deviceService[it] != null) {
+                val service = deviceService[it]
+                val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                it.disconnect()
+            }
+        }
+        connectedDevices.clear()
+
+        val act = PuckJsDetectionFragmentDirections.actionPuckJsFragmentToPuckJsWritingFragment(sensorId, endpoint, selection!!.device.address)
+        findNavController().navigate(act)
     }
 
     private fun createNewDeviceButton(text: String, onClickListener: OnClickListener, id: Int): Button {
@@ -125,22 +129,16 @@ class PuckJsDetectionFragment : Fragment() {
         val btn = it.findViewById<Button>(it.id)
 
         val device = deviceButtonMutableMap[btn]
-        if(!isDeviceConnected(device!!.address)) {
-            val connection = device.connectGatt(publicApplicationContext, false, gattConnectionCallback)
+        if(!le.isDeviceConnected(device!!.address)) {
+            device.connectGatt(publicApplicationContext, false, gattConnectionCallback)
 
-            deviceConnections.add(connection)
-            lastSelection = currentSelection.value
-            currentSelection.postValue(connection)
+            val infoText = pView!!.findViewById<TextView>(R.id.infoText)
+            infoText.textSize = 26F
+            infoText.text =
+                getString(R.string.selected_device, device.name)
         }
     }
 
-    private fun deviceServicesDiscovered(connection: BluetoothGatt, discovered: Boolean) {
-        deviceServicesDiscoveredLiveDataMutableMap.forEach { (t, u) ->
-            if(connection.hashCode() == t.hashCode()) {
-                u.postValue(discovered)
-            }
-        }
-    }
 
     @SuppressLint("MissingPermission")
     private val gattConnectionCallback = object : BluetoothGattCallback() {
@@ -148,11 +146,18 @@ class PuckJsDetectionFragment : Fragment() {
             super.onConnectionStateChange(gatt, status, newState)
 
             if(newState == BluetoothProfile.STATE_CONNECTED) {
-                gatt?.discoverServices()
+                connectedDevices.add(gatt!!)
+
+                if(selection != null) {
+                    lastSelection.postValue(selection)
+                }
+                selection = gatt
+
+                gatt.discoverServices()
             }
             if(newState == BluetoothProfile.STATE_DISCONNECTED) {
-                deviceServiceMutableMap[gatt!!] = null
-                deviceConnections.remove(gatt)
+                connectedDevices.remove(gatt)
+                deviceService.remove(gatt)
             }
         }
 
@@ -160,10 +165,11 @@ class PuckJsDetectionFragment : Fragment() {
             super.onServicesDiscovered(gatt, status)
 
             val service = gatt!!.getService(NordicUUIDs.SERVICE)
-            deviceServiceMutableMap[gatt] = service
-            deviceServicesDiscovered(gatt, true)
-        }
+            deviceService[gatt] = service
 
+            val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+            gatt.writeCharacteristic(characteristic, espruino.discoveryCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+        }
     }
 
     private val scanCallback = object : ScanCallback() {
@@ -183,22 +189,8 @@ class PuckJsDetectionFragment : Fragment() {
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            Log.e(TAG, "BLE scanning failed / No device found. Error Code: $errorCode")
+            Log.w(TAG, "No device found.")
         }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun isDeviceConnected(deviceAddress: String): Boolean {
-        var connected = false
-
-        // Check if the device is currently connected
-        val connectedDevices = le.bluetoothManager!!.getConnectedDevices(BluetoothProfile.GATT)
-        for (device in connectedDevices) {
-            connected = device.address == deviceAddress
-        }
-
-        // Device is not connected
-        return connected
     }
 
     @SuppressLint("MissingPermission")
@@ -206,7 +198,20 @@ class PuckJsDetectionFragment : Fragment() {
         super.onPause()
 
         espruino.stopScanning()
-        deviceConnections.forEach { it!!.disconnect() }
+        connectedDevices.forEach {
+            if(deviceService[it] != null) {
+                val service = deviceService[it]
+                val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                it.disconnect()
+            }
+        }
+        connectedDevices.clear()
+
+        val infoText = pView!!.findViewById<TextView>(R.id.infoText)
+        infoText.textSize = 18F
+        infoText.text =
+            getString(R.string.choose_puckjs)
     }
 
     override fun onResume() {
@@ -220,7 +225,14 @@ class PuckJsDetectionFragment : Fragment() {
         super.onDestroy()
 
         espruino.stopScanning()
-        deviceConnections.forEach { it!!.disconnect() }
+        connectedDevices.forEach {
+            if(deviceService[it] != null) {
+                val service = deviceService[it]
+                val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                it.disconnect()
+            }
+        }
+        connectedDevices.clear()
     }
-
 }

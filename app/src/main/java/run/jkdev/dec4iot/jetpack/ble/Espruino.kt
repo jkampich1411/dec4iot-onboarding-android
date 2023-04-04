@@ -5,6 +5,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.net.MacAddress
 import android.os.ParcelUuid
 import android.os.VibrationEffect
 import android.util.Log
@@ -14,9 +15,9 @@ import run.jkdev.dec4iot.jetpack.interfaces.NordicUUIDs
 import java.util.*
 
 class Espruino {
-    val discoveryCmd = "discovery()\n".toByteArray(Charsets.UTF_8)
-    val discoveredCmd = "discovered()\n".toByteArray(Charsets.UTF_8)
-    fun writeConfigCmd(fileName: String, id: String, endpoint: String): ByteArray {
+    val discoveryCmdPuckJs = "discovery()\n".toByteArray(Charsets.UTF_8)
+    val discoveredCmdPuckJs = "discovered()\n".toByteArray(Charsets.UTF_8)
+    fun writeConfigCmdPuckJs(fileName: String, id: String, endpoint: String): ByteArray {
         return "writeConfig('$fileName','$id','$endpoint')\n".toByteArray(Charsets.UTF_8)
     }
 
@@ -31,7 +32,6 @@ class Espruino {
 
     private val scanFilter = ScanFilter.Builder()
         .setServiceUuid(ParcelUuid(NordicUUIDs.SERVICE))
-        .build()
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
@@ -50,23 +50,29 @@ class Espruino {
     }
 
     @SuppressLint("MissingPermission")
-    fun startScanning() {
+    fun startScanning(macAddress: String? = null) {
         if (!allPermGranted()) {
             Toast.makeText(publicApplicationContext, R.string.permission_not_granted_no_continue, Toast.LENGTH_LONG).show()
             publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
             return
         }
+        if(scanning) { return }
 
-        leScanner.startScan(listOf<ScanFilter>(scanFilter), scanSettings, scanCallback)
+        val localScanFilter = scanFilter
+        if(macAddress != null) { localScanFilter.setDeviceAddress(macAddress) }
+
+        leScanner.startScan(listOf<ScanFilter>(localScanFilter.build()), scanSettings, scanCallback)
         scanning = true
     }
 
     @SuppressLint("MissingPermission")
     fun stopScanning() {
         if (!allPermGranted()) {
-            Log.e(TAG, "Something terrible went wrong. I truly have no Idea why!")
+            Log.e(TAG, "Something went terribly wrong!")
             return
         }
+        if(!scanning) { return }
+
         leScanner.stopScan(scanCallback)
         scanning = false
 
