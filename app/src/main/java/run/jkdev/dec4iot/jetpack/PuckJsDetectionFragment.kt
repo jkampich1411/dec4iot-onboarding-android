@@ -1,25 +1,30 @@
 package run.jkdev.dec4iot.jetpack
 
-import android.icu.lang.UCharacter.GraphemeClusterBreak.L
-import android.nfc.NdefMessage
-import android.nfc.NdefRecord
-import android.nfc.Tag
-import android.nfc.tech.Ndef
-import android.nfc.tech.NfcA
+import android.annotation.SuppressLint
+import android.bluetooth.*
+import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.fragment.findNavController
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import androidx.core.view.children
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.fragment.navArgs
-import run.jkdev.dec4iot.jetpack.gsonmodels.DeviceDetectionQr
-import java.lang.Byte
+import run.jkdev.dec4iot.jetpack.ble.BleAdapter
+import run.jkdev.dec4iot.jetpack.ble.Espruino
+import run.jkdev.dec4iot.jetpack.interfaces.NordicUUIDs
+
 
 /**
  * A simple [Fragment] subclass.
@@ -28,13 +33,24 @@ import java.lang.Byte
  */
 class PuckJsDetectionFragment : Fragment() {
     private val args: PuckJsDetectionFragmentArgs by navArgs()
-    private val nfcViewModel = ViewModelProvider(publicMainActivityThis)[NfcDataViewModel::class.java]
 
     private var sensorId: String = ""
     private var endpoint: String = ""
     private var pView: View? = null
 
-    private var readCmd: ByteArray = byteArrayOf(0x30)
+    private val espruino = Espruino()
+    private val le = BleAdapter()
+
+    private val foundDevicesList = mutableSetOf<BluetoothDevice>()
+    private val foundDevicesLiveData = MutableLiveData<MutableSet<BluetoothDevice>>()
+
+    private val deviceButtonMutableMap = mutableMapOf<Button, BluetoothDevice>()
+    private val deviceServiceMutableMap = mutableMapOf<BluetoothGatt, BluetoothGattService?>()
+    private val deviceServicesDiscoveredLiveDataMutableMap = mutableMapOf<BluetoothGatt, MutableLiveData<Boolean>>()
+    private val deviceConnections = mutableSetOf<BluetoothGatt?>()
+
+    private val currentSelection = MutableLiveData<BluetoothGatt>()
+    private var lastSelection: BluetoothGatt? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,6 +61,7 @@ class PuckJsDetectionFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_puck_js_detection, container, false)
     }
 
+    @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -53,66 +70,157 @@ class PuckJsDetectionFragment : Fragment() {
 
         this.pView = view
 
-        nfcViewModel.shouldBeListening.value = true
+        espruino.addCallback(this.scanCallback)
+        espruino.startScanning()
 
-        nfcViewModel.nfcData.observeForever { this@PuckJsDetectionFragment.asyncNfcConnection(it) }
-    }
+        foundDevicesLiveData.observeForever { set ->
+            val layout = view.findViewById<LinearLayout>(R.id.foundDevicesButtons)
 
-    private fun asyncNfcConnection(tag: Tag) {
-        val thread = Thread {
-            nfcViewModel.shouldBeListening.postValue(false)
+            set.forEach {
+                if(layout.findViewById<Button>(it.hashCode()) == null) {
+                    val btn = createNewDeviceButton(it.name, deviceButtonOnClickListener, it.hashCode())
 
-            val ndef = Ndef.get(tag)
-
-            try {
-                ndef.connect()
-                Log.i(TAG, "the what and who now? ")
-                Log.i(TAG, ndef.toString())
-
-                val records = ndef.ndefMessage.records
-                val record = records[0]
-                Log.i(TAG, record.toString())
-
-            } catch (ex: android.nfc.TagLostException) {
-                nfcViewModel.shouldBeListening.postValue(true)
-            } catch (ex: java.io.IOException) {
-                nfcViewModel.shouldBeListening.postValue(true)
-                Log.e(TAG, ex.stackTraceToString())
-            } catch (ex: Throwable) {
-                Log.e(TAG, ex.stackTraceToString())
+                    deviceButtonMutableMap[btn] = it
+                    layout.addView(btn)
+                }
             }
         }
-        thread.start()
-    }
 
-    private fun noThisWontWork() {
-        this.pView?.findViewById<TextView>(R.id.resultsText)
-            ?.text = getString(R.string.no_dec4iot_devicedetection)
-
-        this.pView?.findViewById<Button>(R.id.continueButton)
-            ?.text = "Try again"
-
-        this.pView?.findViewById<Button>(R.id.continueButton)
-            ?.setOnClickListener {
-                val act = PuckJsDetectionFragmentDirections.actionPuckJsFragmentToQrScanFragment()
-                findNavController().navigate(act)
+        currentSelection.observeForever {
+            if(deviceServicesDiscoveredLiveDataMutableMap[lastSelection]!!.value == true) {
+                val service = deviceServiceMutableMap[lastSelection]
+                val chara = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+                lastSelection!!.writeCharacteristic(chara, espruino.discoveredCmd, WRITE_TYPE_NO_RESPONSE)
+                lastSelection!!.disconnect()
             }
+        }
+
+        deviceServicesDiscoveredLiveDataMutableMap.forEach { (t, u) ->
+            u.observeForever {
+                if(it == true) {
+                    servicesDiscoveredSendCommands(t, deviceServiceMutableMap[t]!!)
+                }
+            }
+        }
     }
 
-    fun enableAndSetData(data: DeviceDetectionQr) {
-        this.pView?.findViewById<TextView>(R.id.pleaseTouchText)
-            ?.visibility = View.INVISIBLE
+    private fun servicesDiscoveredSendCommands(gatt: BluetoothGatt, service: BluetoothGattService) {
+        val charac = service.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+        gatt.writeCharacteristic(charac, espruino.discoveryCmd, WRITE_TYPE_NO_RESPONSE)
 
-        this.pView?.findViewById<ImageView>(R.id.nfcImage)
-            ?.visibility = View.INVISIBLE
-
-        if(data.trustyDevice !== "I am your trusty Dec4IoT Device") { return noThisWontWork() }
     }
 
+    private fun createNewDeviceButton(text: String, onClickListener: OnClickListener, id: Int): Button {
+        val btn = Button(publicApplicationContext)
+
+        btn.setOnClickListener(onClickListener)
+        btn.text = text
+        btn.id = id
+
+        return btn
+    }
+
+    @SuppressLint("MissingPermission")
+    private val deviceButtonOnClickListener = OnClickListener {
+        val btn = it.findViewById<Button>(it.id)
+
+        val device = deviceButtonMutableMap[btn]
+        if(!isDeviceConnected(device!!.address)) {
+            val connection = device.connectGatt(publicApplicationContext, false, gattConnectionCallback)
+
+            deviceConnections.add(connection)
+            lastSelection = currentSelection.value
+            currentSelection.postValue(connection)
+        }
+    }
+
+    private fun deviceServicesDiscovered(connection: BluetoothGatt, discovered: Boolean) {
+        deviceServicesDiscoveredLiveDataMutableMap.forEach { (t, u) ->
+            if(connection.hashCode() == t.hashCode()) {
+                u.postValue(discovered)
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private val gattConnectionCallback = object : BluetoothGattCallback() {
+        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+            super.onConnectionStateChange(gatt, status, newState)
+
+            if(newState == BluetoothProfile.STATE_CONNECTED) {
+                gatt?.discoverServices()
+            }
+            if(newState == BluetoothProfile.STATE_DISCONNECTED) {
+                deviceServiceMutableMap[gatt!!] = null
+                deviceConnections.remove(gatt)
+            }
+        }
+
+        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            super.onServicesDiscovered(gatt, status)
+
+            val service = gatt!!.getService(NordicUUIDs.SERVICE)
+            deviceServiceMutableMap[gatt] = service
+            deviceServicesDiscovered(gatt, true)
+        }
+
+    }
+
+    private val scanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            super.onScanResult(callbackType, result)
+            try {
+                if(result!!.device !in foundDevicesList) {
+                    foundDevicesList.add(result.device)
+                    foundDevicesLiveData.postValue(foundDevicesList)
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during LeScanCallback", e)
+            }
+
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            super.onScanFailed(errorCode)
+            Log.e(TAG, "BLE scanning failed / No device found. Error Code: $errorCode")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun isDeviceConnected(deviceAddress: String): Boolean {
+        var connected = false
+
+        // Check if the device is currently connected
+        val connectedDevices = le.bluetoothManager!!.getConnectedDevices(BluetoothProfile.GATT)
+        for (device in connectedDevices) {
+            connected = device.address == deviceAddress
+        }
+
+        // Device is not connected
+        return connected
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun onPause() {
+        super.onPause()
+
+        espruino.stopScanning()
+        deviceConnections.forEach { it!!.disconnect() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        espruino.startScanning()
+    }
+
+    @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
 
-        nfcViewModel.shouldBeListening.value = false
+        espruino.stopScanning()
+        deviceConnections.forEach { it!!.disconnect() }
     }
 
 }

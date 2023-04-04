@@ -64,8 +64,6 @@ class QrSuccessFragment : Fragment() {
         qrData.sensorId?.also { this@QrSuccessFragment.sensorId = it } ?: return noThisWontWork(view)
         qrData.endpoint?.also { this@QrSuccessFragment.endpoint = it } ?: return noThisWontWork(view)
 
-        Log.i(TAG, qrData.toString())
-
         view.findViewById<TextView>(R.id.qrSuccessSensorId)
             .text = "Sensor Id: ${qrData.sensorId}"
 

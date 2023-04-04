@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -29,6 +30,7 @@ import run.jkdev.dec4iot.jetpack.http.*
 lateinit var publicApplicationContext: Context
 lateinit var publicHttpQueue: RequestQueue
 lateinit var publicMainActivityThis: MainActivity
+lateinit var publicVibrator: Vibrator
 const val TAG = "DEC4IOTJETPACK"
 
 class MainActivity : AppCompatActivity() {
@@ -40,8 +42,6 @@ class MainActivity : AppCompatActivity() {
     private var nfcDataViewModel: NfcDataViewModel? = null
 
     private var vibrator: Vibrator? = null
-
-    var isPuckJsDetectingQuestionMark = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,13 +64,15 @@ class MainActivity : AppCompatActivity() {
         this.nfcAdapter = getDefaultAdapter(this)
         this.nfcDataViewModel = ViewModelProvider(this)[NfcDataViewModel::class.java]
 
-        this.vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        this.vibrator = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
         } else {
             @Suppress("DEPRECATION")
             getSystemService(VIBRATOR_SERVICE) as Vibrator
         }
+
+        publicVibrator = this.vibrator!!
 
         try {
             nfcDataViewModel?.shouldBeListening!!.observeForever { if(it == true) { this@MainActivity.startNfcAdapter() } }
@@ -188,14 +190,28 @@ fun checkBarcodeScanningAvailable(): Boolean {
     return true
 }
 
-private val REQUIRED_PERMISSIONS =
+private val REQUIRED_PERMISSIONS = if(Build.VERSION.SDK_INT >= 31) {
     mutableListOf (
         Manifest.permission.CAMERA,
         Manifest.permission.BLUETOOTH,
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.NFC,
         Manifest.permission.INTERNET,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
     ).toTypedArray()
+} else {
+    mutableListOf (
+        Manifest.permission.CAMERA,
+        Manifest.permission.BLUETOOTH,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.NFC,
+        Manifest.permission.INTERNET,
+    ).toTypedArray()
+}
+
 private const val REQUIRED_PERMISSION_CODE = 10
 
 fun allPermGranted() = REQUIRED_PERMISSIONS.all { ContextCompat.checkSelfPermission(publicApplicationContext, it) == PackageManager.PERMISSION_GRANTED }

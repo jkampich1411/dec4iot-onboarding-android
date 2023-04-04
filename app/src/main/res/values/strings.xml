@@ -20,6 +20,7 @@
     <!-- Permissions Check -->
     <string name="action_check_permissions">Check for Permissions</string>
     <string name="permissions_granted">Permissions granted! 🥳</string>
+    <string name="permission_not_granted_no_continue">Some permissions were not granted. Please restart the app, grant ALL permissions and try again! 😭</string>
 
     <!-- Wrong QR Code -->
     <string name="qr_no_support">QR code not created by dec4IoT!</string>
@@ -32,7 +33,7 @@
 
     <!-- Puck JS Detection -->
     <string name="fragment_puckjs">PuckJs Detection</string>
-    <string name="touch_puckjs">Please touch your PuckJS to the back of your device!</string>
+    <string name="choose_puckjs">Your Puck.JS will start rotating colours. If it doesn\'t, you chose the wrong device.\nPlease choose your device and press continue!</string>
     <string name="continue_puckjs">Continue</string>
 
     <!-- Device Detection -->

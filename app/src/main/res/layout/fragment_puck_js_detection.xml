@@ -7,61 +7,50 @@
     tools:context=".PuckJsDetectionFragment">
 
     <!-- TODO: Update blank fragment layout -->
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <TextView
             android:id="@+id/pleaseTouchText"
-            android:layout_width="344dp"
-            android:layout_height="53dp"
-            android:text="@string/touch_puckjs"
+            android:layout_width="395dp"
+            android:layout_height="64dp"
+            android:text="@string/choose_puckjs"
             android:textAlignment="center"
-            android:textSize="20sp"
+            android:textSize="18sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.492"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.249" />
-
-        <ImageView
-            android:id="@+id/nfcImage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/nfc_scanning_icon"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.498"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/pleaseTouchText"
-            app:layout_constraintVertical_bias="0.17" />
-
-        <TextView
-            android:id="@+id/resultsText"
-            android:layout_width="381dp"
-            android:layout_height="271dp"
-            android:textAlignment="center"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.533"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.258" />
+            app:layout_constraintVertical_bias="0.064" />
 
         <Button
             android:id="@+id/continueButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="232dp"
+            android:layout_marginBottom="56dp"
+            android:clickable="false"
             android:text="@string/continue_puckjs"
-            android:visibility="invisible"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.509"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/foundDevicesButtons"
+            android:layout_width="383dp"
+            android:layout_height="472dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@+id/continueButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.428"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/resultsText"
-            app:layout_constraintVertical_bias="0.967" />
+            app:layout_constraintTop_toBottomOf="@+id/pleaseTouchText"
+            app:layout_constraintVertical_bias="0.437" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
