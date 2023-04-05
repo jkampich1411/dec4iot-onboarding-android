@@ -107,8 +107,8 @@
     <fragment
         android:id="@+id/onboardingDone"
         android:name="run.jkdev.dec4iot.jetpack.OnboardingDone"
-        android:label="fragment_onboarding_done"
-        tools:layout="@layout/fragment_onboarding_done" >
+        android:label="@string/done_fragment_label"
+        tools:layout="@layout/fragment_onboarding_done">
         <action
             android:id="@+id/action_onboardingDone_to_FirstFragment"
             app:destination="@id/FirstFragment"

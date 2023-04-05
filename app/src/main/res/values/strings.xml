@@ -2,15 +2,20 @@
     <string name="app_name" translatable="false">dec4IoT Onboarding</string>
 
     <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
+    <string name="first_fragment_label">Welcome to dec4IoT</string>
+
+    <!-- Fragment Labels -->
     <string name="qr_fragment_label">Scan your QR Code</string>
     <string name="qr_success_fragment_label">QR Code scan result</string>
     <string name="bangle_js_fragment_label">Bangle.Js</string>
+    <string name="fragment_puckjs">PuckJs Detection</string>
+    <string name="puckjs_writing_fragment_label">Writing data …</string>
+    <string name="done_fragment_label">You\'re done! 🥳</string>
 
     <string name="next">Next</string>
 
     <!-- Haha funny lorem ipsum -->
-    <string name="lorem_ipsum">There would be a lorem ipsum here! Instead have a queen song: One, two, three, four, one! Yeah. Okay. Don\'t do it. Don\'t you try, baby. Don\'t do that (Don\'t, don\'t, don\'t). Don\'t do that (You got a good thing goin\' now). Don\'t do it, don\'t do it, don\'t. Don\'t try suicide, nobody\'s worth it. Don\'t try suicide, nobody cares. Don\'t try suicide, you\'re just gonna hate it. Don\'t try suicide, nobody gives a damn. So you think it\'s the easy way out?. Think you\'re gonna slash your wrists this time?. Baby, when you do it, all you do is get on my t*ts. Don\'t do that (Try, try, try, baby). Don\'t do that (You got a good thing goin\' now). Don\'t do it, don\'t do it, don\'t. Don\'t try suicide, nobody\'s worth it. Don\'t try suicide, nobody cares. Don\'t try suicide, you\'re just gonna hate it. Don\'t try suicide, nobody gives a damn. You need help. Look at yourself, you need help (Yeah). You need life. So don\'t hang yourself. It\'s okay, okay, okay, okay. You just can\'t be a prick teaser all of the time. A little bit attention? You got it. Need some affection? You got it (Hey). Suicide, suicide, suicide bid (Oh). Suicide, suicide, suicide bid (Uh). Suicide (Hey). Don\'t do it, don\'t do it, don\'t do it, babe (Yeah). Don\'t do it, don\'t do it, don\'t do it! Hey. Yeah. Don\'t put your neck on the line. Don\'t drown on me, babe. Blow your brains out. Don\'t do that (Yeah). Don\'t do that (You got a good thing going, baby). Don\'t do it, (No) don\'t do it, (No!) don\'t. Don\'t try suicide, nobody\'s worth it. Don\'t try suicide, nobody cares. Don\'t try suicide, you\'re just gonna hate it. Don\'t try suicide, nobody gives, nobody gives. Nobody gives a damn. Okay</string>
+    <string name="lorem_ipsum">Welcome to dec4IoT.\n\nI should put a text explaining the project here, but I unfortunately do not have it.</string>
 
     <!-- Modules Check -->
     <string name="action_check_modules">Check for Modules</string>
@@ -32,7 +37,6 @@
     <string name="select_puckjs">Puck.Js</string>
 
     <!-- Puck JS Detection -->
-    <string name="fragment_puckjs">PuckJs Detection</string>
     <string name="choose_puckjs">Your Puck.JS will start rotating colours. If it doesn\'t, you chose the wrong device.\nPlease choose your device and press continue!</string>
     <string name="continue_puckjs">Continue</string>
 
@@ -42,7 +46,6 @@
     <string name="no_device_selected_stop">Please select a device before continuing!</string>
 
     <!-- Data Writing -->
-    <string name="puckjs_writing_fragment_label">Writing data …</string>
     <string name="the_following_will_be_written">The following data will be written to %s</string>
     <string name="sensor_id_to_be_written">Sensor ID: %s</string>
     <string name="api_endpoint_to_be_written">API Endpoint:\n%s</string>
@@ -53,9 +56,8 @@
     <string name="please_confirm_all_data">Please confirm the information above!</string>
 
     <!-- Done -->
-    <string name="done_fragment_label">You\'re done!</string>
-    <string name="congratulations_text">You\'re done! Your device has been onboarded to dec4IoT.\n\nPlease restart your device.\nTo restart your Puck.Js take the battery out of it\'s compartment, wait 10 seconds and put it back in!\nTo restart your Bangle.Js press the button until "Reloading…" appears!\n\nHave fun!</string>
-    <string name="done_btn">Restart Setup</string>
+    <string name="congratulations_text">You\'re done! Your device has been onboarded to dec4IoT.\n\nPlease restart your device.\nTo restart your Puck.Js take the battery out of it\'s compartment, wait 10 seconds and put it back in!\nTo restart your Bangle.Js press the button until \"Reloading…\" appears!\n\nHave fun!</string>
+    <string name="done_btn">Setup new device</string>
 
 
 </resources>

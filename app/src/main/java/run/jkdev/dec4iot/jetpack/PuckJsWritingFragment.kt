@@ -8,7 +8,6 @@ import android.bluetooth.le.ScanResult
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnClickListener
@@ -17,12 +16,15 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
+import androidx.navigation.NavDirections
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import run.jkdev.dec4iot.jetpack.ble.BleAdapter
 import run.jkdev.dec4iot.jetpack.ble.Espruino
 import run.jkdev.dec4iot.jetpack.interfaces.NordicUUIDs
+import java.util.*
 
 class PuckJsWritingFragment : Fragment() {
     private val args: PuckJsWritingFragmentArgs by navArgs()
@@ -47,6 +49,11 @@ class PuckJsWritingFragment : Fragment() {
     private val leDevice = MutableLiveData<BluetoothDevice>()
     private var leGatt: BluetoothGatt? = null
     private var leService: BluetoothGattService? = null
+    private val serviceDisc = MutableLiveData(false)
+    private val txQueue = mutableListOf<ByteArray>()
+
+    private var continueOnQueueEnd = false
+    private var nextAct: NavDirections? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -92,6 +99,17 @@ class PuckJsWritingFragment : Fragment() {
 
         leDevice.observeForever {
             it.connectGatt(publicApplicationContext, false, gattCallback)
+            espruino.stopScanning()
+        }
+
+        serviceDisc.observeForever {
+            if(it == true) {
+
+                val rx = leService!!.getCharacteristic(NordicUUIDs.RX_CHARACTERISTIC)
+                leGatt!!.setCharacteristicNotification(rx, true)
+                val desc = rx.getDescriptor(NordicUUIDs.NOTIFY_DESCRIPTOR)
+                leGatt!!.writeDescriptor(desc, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+            }
         }
     }
 
@@ -100,22 +118,32 @@ class PuckJsWritingFragment : Fragment() {
         val isChecked = checkedAllCheckBox!!.isChecked
 
         if(isChecked && leGatt != null && leService != null && le.isDeviceConnected(leGatt!!.device.address)) { // Point of no return reached!
-            val chara = leService!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+            continueOnQueueEnd = true
+            nextAct = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToOnboardingDone()
+
             val valToSend = espruino.writeConfigCmdPuckJs("main.json", sensorId, endpoint, "1")
+            val split = splitArray(valToSend, 20)
+            split.forEach {
+                txQueue.add(it)
+            }
 
-            leGatt!!.writeCharacteristic(chara, valToSend, WRITE_TYPE_NO_RESPONSE)
+            val chara = leService!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+            leGatt!!.writeCharacteristic(chara, txQueue.first(), WRITE_TYPE_NO_RESPONSE)
+            txQueue.removeAt(0)
 
-            leGatt!!.disconnect()
-
-            val act = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToOnboardingDone()
-            findNavController().navigate(act)
         } else {
             Toast.makeText(publicApplicationContext, R.string.please_confirm_all_data, Toast.LENGTH_LONG).show()
             publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
         }
     }
 
+    @SuppressLint("MissingPermission")
     private val restartBtnListener = OnClickListener {
+        leGatt?.disconnect()
+        leGatt = null
+        leService = null
+        serviceDisc.postValue(false)
+
         val act = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToQrScanFragment()
         findNavController().navigate(act)
     }
@@ -129,8 +157,11 @@ class PuckJsWritingFragment : Fragment() {
                 gatt?.discoverServices()
                 leGatt = gatt
             }
-            if(newState == BluetoothProfile.STATE_DISCONNECTED) {
-                gatt?.connect()
+
+            if(newState == BluetoothProfile.STATE_DISCONNECTED && continueOnQueueEnd && nextAct != null) {
+                requireActivity().runOnUiThread {
+                    findNavController().navigate(nextAct!!)
+                }
             }
         }
 
@@ -139,6 +170,33 @@ class PuckJsWritingFragment : Fragment() {
 
             val service = gatt?.getService(NordicUUIDs.SERVICE)
             leService = service
+
+            serviceDisc.postValue(true)
+
+        }
+
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            super.onCharacteristicChanged(gatt, characteristic, value)
+
+            Log.i(TAG, "onCharacteristicChanged")
+            Log.i(TAG, String(value, Charsets.UTF_8))
+
+            if(txQueue.size >= 1) {
+                val tx = leService!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+
+                gatt.writeCharacteristic(tx, txQueue.first(), WRITE_TYPE_NO_RESPONSE)
+                txQueue.removeAt(0)
+            }
+
+            if(txQueue.size == 0 && continueOnQueueEnd && nextAct != null) {
+                leGatt = null
+                leService = null
+                gatt.disconnect()
+            }
         }
     }
 
@@ -155,11 +213,22 @@ class PuckJsWritingFragment : Fragment() {
         }
     }
 
+    private fun splitArray(originalArray: ByteArray, chunkSize: Int): List<ByteArray> {
+        val resultList = mutableListOf<ByteArray>()
+        var i = 0
+        while (i < originalArray.size) {
+            val endIndex = (i + chunkSize).coerceAtMost(originalArray.size)
+            val chunkArray: ByteArray = originalArray.copyOfRange(i, endIndex)
+            resultList.add(chunkArray)
+            i += chunkSize
+        }
+        return resultList
+    }
+
     @SuppressLint("MissingPermission")
     override fun onPause() {
         super.onPause()
 
-        espruino.stopScanning()
         leGatt?.disconnect()
     }
 
@@ -167,7 +236,6 @@ class PuckJsWritingFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
-        espruino.startScanning(puckJsMac)
         leGatt?.connect()
     }
 
@@ -175,8 +243,6 @@ class PuckJsWritingFragment : Fragment() {
     override fun onDestroy() {
         super.onDestroy()
 
-        espruino.stopScanning()
         leGatt?.disconnect()
     }
-
 }
