@@ -53,7 +53,6 @@ class PuckJsWritingFragment : Fragment() {
     private val serviceDisc = MutableLiveData(false)
     private val txQueue = mutableListOf<ByteArray>()
 
-    private var done = false
     private var continueOnQueueEnd = false
     private var nextAct: NavDirections? = null
 
@@ -157,7 +156,8 @@ class PuckJsWritingFragment : Fragment() {
 
     @SuppressLint("MissingPermission")
     private val restartBtnListener = OnClickListener {
-        leGatt?.disconnect()
+        if(leGatt == null) { return@OnClickListener }
+        leGatt!!.disconnect()
         leGatt = null
         leService = null
         serviceDisc.postValue(false)
@@ -174,16 +174,6 @@ class PuckJsWritingFragment : Fragment() {
             if(newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt?.discoverServices()
                 leGatt = gatt
-            }
-
-            if(newState == BluetoothProfile.STATE_DISCONNECTED && !done) {
-                gatt?.connect()
-            }
-
-            if(newState == BluetoothProfile.STATE_DISCONNECTED && continueOnQueueEnd && nextAct != null && done) {
-                requireActivity().runOnUiThread {
-                    findNavController().navigate(nextAct!!)
-                }
             }
         }
 
@@ -221,8 +211,11 @@ class PuckJsWritingFragment : Fragment() {
             if(txQueue.isEmpty() && continueOnQueueEnd && nextAct != null) {
                 leGatt = null
                 leService = null
-                done = true
                 gatt.disconnect()
+
+                requireActivity().runOnUiThread {
+                    findNavController().navigate(nextAct!!)
+                }
             }
         }
     }
