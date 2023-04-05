@@ -12,9 +12,8 @@
     <string name="puckjs_writing_fragment_label">Writing data …</string>
     <string name="done_fragment_label">You\'re done! 🥳</string>
 
-    <string name="next">Next</string>
-
-    <!-- Haha funny lorem ipsum -->
+    <!-- First Fragment -->
+    <string name="next">Start</string>
     <string name="lorem_ipsum">Welcome to dec4IoT.\n\nI should put a text explaining the project here, but I unfortunately do not have it.</string>
 
     <!-- Modules Check -->
@@ -54,6 +53,9 @@
     <string name="restart_btn">Restart</string>
     <string name="continue_btn">Continue</string>
     <string name="please_confirm_all_data">Please confirm the information above!</string>
+
+    <!-- other -->
+    <string name="something_went_wrong">Something went wrong! Hang tight, we\'re working on fixing it!</string>
 
     <!-- Done -->
     <string name="congratulations_text">You\'re done! Your device has been onboarded to dec4IoT.\n\nPlease restart your device.\nTo restart your Puck.Js take the battery out of it\'s compartment, wait 10 seconds and put it back in!\nTo restart your Bangle.Js press the button until \"Reloading…\" appears!\n\nHave fun!</string>

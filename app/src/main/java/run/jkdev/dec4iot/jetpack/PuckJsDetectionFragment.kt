@@ -25,7 +25,6 @@ import run.jkdev.dec4iot.jetpack.ble.BleAdapter
 import run.jkdev.dec4iot.jetpack.ble.Espruino
 import run.jkdev.dec4iot.jetpack.interfaces.NordicUUIDs
 import java.util.*
-import kotlin.concurrent.timerTask
 
 class PuckJsDetectionFragment : Fragment() {
     private val args: PuckJsDetectionFragmentArgs by navArgs()
@@ -49,7 +48,7 @@ class PuckJsDetectionFragment : Fragment() {
     private var selection: BluetoothGatt? = null
     private val lastSelection = MutableLiveData<BluetoothGatt?>(null)
 
-    private var buttonsEnabled = true
+    private var buttonEnabled = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -112,6 +111,7 @@ class PuckJsDetectionFragment : Fragment() {
             publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
             return@OnClickListener
         }
+        if(!buttonEnabled) { return@OnClickListener }
 
         espruino.stopScanning()
         connectedDevices.forEach {
@@ -146,16 +146,8 @@ class PuckJsDetectionFragment : Fragment() {
 
     @SuppressLint("MissingPermission")
     private val deviceButtonOnClickListener = OnClickListener {
-        if(!buttonsEnabled) { return@OnClickListener }
-        if(buttonsEnabled) {
-            buttonsEnabled = false
-
-            Timer().schedule(timerTask {
-                requireActivity().runOnUiThread {
-                    buttonsEnabled = true
-                }
-            }, 2000)
-        }
+        if(!buttonEnabled) { return@OnClickListener }
+        buttonEnabled = false
 
         val btn = it.findViewById<Button>(it.id)
 
@@ -196,16 +188,23 @@ class PuckJsDetectionFragment : Fragment() {
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             super.onServicesDiscovered(gatt, status)
 
-            val service = gatt!!.getService(NordicUUIDs.SERVICE)
-            deviceService[gatt] = service
+            if(status == BluetoothGatt.GATT_SUCCESS) {
+                buttonEnabled = true
 
-            val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+                val service = gatt!!.getService(NordicUUIDs.SERVICE)
+                deviceService[gatt] = service
 
-            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                characteristic.value = espruino.discoveryCmdPuckJs
-                gatt.writeCharacteristic(characteristic)
-            } else {
-                gatt.writeCharacteristic(characteristic, espruino.discoveryCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    characteristic.value = espruino.discoveryCmdPuckJs
+                    gatt.writeCharacteristic(characteristic)
+                } else {
+                    gatt.writeCharacteristic(characteristic, espruino.discoveryCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                }
+            } else if(status == BluetoothGatt.GATT_FAILURE) {
+                Toast.makeText(publicApplicationContext, R.string.something_went_wrong, Toast.LENGTH_LONG).show()
+                publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
             }
         }
     }
