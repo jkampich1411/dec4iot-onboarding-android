@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.util.Log
@@ -59,6 +60,7 @@ class PuckJsDetectionFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_puck_js_detection, container, false)
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -89,12 +91,20 @@ class PuckJsDetectionFragment : Fragment() {
             if(it != null && le.isDeviceConnected(it.device.address) && deviceService[it] != null) {
                 val service = deviceService[it]
                 val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    characteristic.value = espruino.discoveredCmdPuckJs
+                    it.writeCharacteristic(characteristic)
+                } else {
+                    it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                }
+
                 it.disconnect()
             }
         }
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     private val continueButtonListener = OnClickListener {
         if(selection == null) {
@@ -108,9 +118,15 @@ class PuckJsDetectionFragment : Fragment() {
             if(deviceService[it] != null) {
                 val service = deviceService[it]
                 val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
-                it.disconnect()
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    characteristic.value = espruino.discoveredCmdPuckJs
+                    it.writeCharacteristic(characteristic)
+                } else {
+                    it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                }
             }
+            it.disconnect()
         }
         connectedDevices.clear()
 
@@ -176,6 +192,7 @@ class PuckJsDetectionFragment : Fragment() {
             }
         }
 
+        @Suppress("DEPRECATION")
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             super.onServicesDiscovered(gatt, status)
 
@@ -183,7 +200,13 @@ class PuckJsDetectionFragment : Fragment() {
             deviceService[gatt] = service
 
             val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-            gatt.writeCharacteristic(characteristic, espruino.discoveryCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                characteristic.value = espruino.discoveryCmdPuckJs
+                gatt.writeCharacteristic(characteristic)
+            } else {
+                gatt.writeCharacteristic(characteristic, espruino.discoveryCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+            }
         }
     }
 
@@ -208,6 +231,7 @@ class PuckJsDetectionFragment : Fragment() {
         }
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     override fun onPause() {
         super.onPause()
@@ -217,7 +241,14 @@ class PuckJsDetectionFragment : Fragment() {
             if(deviceService[it] != null) {
                 val service = deviceService[it]
                 val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    characteristic.value = espruino.discoveredCmdPuckJs
+                    it.writeCharacteristic(characteristic)
+                } else {
+                    it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                }
+
                 it.disconnect()
             }
         }
@@ -235,6 +266,7 @@ class PuckJsDetectionFragment : Fragment() {
         espruino.startScanning()
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
@@ -244,7 +276,14 @@ class PuckJsDetectionFragment : Fragment() {
             if(deviceService[it] != null) {
                 val service = deviceService[it]
                 val characteristic = service!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-                it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    characteristic.value = espruino.discoveredCmdPuckJs
+                    it.writeCharacteristic(characteristic)
+                } else {
+                    it.writeCharacteristic(characteristic, espruino.discoveredCmdPuckJs, WRITE_TYPE_NO_RESPONSE)
+                }
+
                 it.disconnect()
             }
         }

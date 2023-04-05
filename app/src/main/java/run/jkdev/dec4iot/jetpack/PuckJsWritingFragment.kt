@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.util.Log
@@ -52,6 +53,7 @@ class PuckJsWritingFragment : Fragment() {
     private val serviceDisc = MutableLiveData(false)
     private val txQueue = mutableListOf<ByteArray>()
 
+    private var done = false
     private var continueOnQueueEnd = false
     private var nextAct: NavDirections? = null
 
@@ -63,6 +65,7 @@ class PuckJsWritingFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_puck_js_writing, container, false)
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -108,11 +111,19 @@ class PuckJsWritingFragment : Fragment() {
                 val rx = leService!!.getCharacteristic(NordicUUIDs.RX_CHARACTERISTIC)
                 leGatt!!.setCharacteristicNotification(rx, true)
                 val desc = rx.getDescriptor(NordicUUIDs.NOTIFY_DESCRIPTOR)
-                leGatt!!.writeDescriptor(desc, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    desc.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    leGatt!!.writeDescriptor(desc)
+                } else {
+                    leGatt!!.writeDescriptor(desc, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                }
+
             }
         }
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     private val continueBtnListener = OnClickListener {
         val isChecked = checkedAllCheckBox!!.isChecked
@@ -122,14 +133,21 @@ class PuckJsWritingFragment : Fragment() {
             nextAct = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToOnboardingDone()
 
             val valToSend = espruino.writeConfigCmdPuckJs("main.json", sensorId, endpoint, "1")
-            val split = splitArray(valToSend, 20)
+            val split = splitArrayForEspruino(valToSend)
             split.forEach {
                 txQueue.add(it)
             }
 
             val chara = leService!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
-            leGatt!!.writeCharacteristic(chara, txQueue.first(), WRITE_TYPE_NO_RESPONSE)
-            txQueue.removeAt(0)
+
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                chara.value = txQueue.first()
+                leGatt!!.writeCharacteristic(chara)
+            } else {
+                leGatt!!.writeCharacteristic(chara, txQueue.first(), WRITE_TYPE_NO_RESPONSE)
+            }
+
+            txQueue.removeFirst()
 
         } else {
             Toast.makeText(publicApplicationContext, R.string.please_confirm_all_data, Toast.LENGTH_LONG).show()
@@ -158,7 +176,11 @@ class PuckJsWritingFragment : Fragment() {
                 leGatt = gatt
             }
 
-            if(newState == BluetoothProfile.STATE_DISCONNECTED && continueOnQueueEnd && nextAct != null) {
+            if(newState == BluetoothProfile.STATE_DISCONNECTED && !done) {
+                gatt?.connect()
+            }
+
+            if(newState == BluetoothProfile.STATE_DISCONNECTED && continueOnQueueEnd && nextAct != null && done) {
                 requireActivity().runOnUiThread {
                     findNavController().navigate(nextAct!!)
                 }
@@ -175,6 +197,7 @@ class PuckJsWritingFragment : Fragment() {
 
         }
 
+        @Suppress("DEPRECATION")
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
@@ -182,19 +205,23 @@ class PuckJsWritingFragment : Fragment() {
         ) {
             super.onCharacteristicChanged(gatt, characteristic, value)
 
-            Log.i(TAG, "onCharacteristicChanged")
-            Log.i(TAG, String(value, Charsets.UTF_8))
-
-            if(txQueue.size >= 1) {
+            if(txQueue.isNotEmpty()) {
                 val tx = leService!!.getCharacteristic(NordicUUIDs.TX_CHARACTERISTIC)
 
-                gatt.writeCharacteristic(tx, txQueue.first(), WRITE_TYPE_NO_RESPONSE)
-                txQueue.removeAt(0)
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    tx.value = txQueue.first()
+                    gatt.writeCharacteristic(tx)
+                } else {
+                    gatt.writeCharacteristic(tx, txQueue.first(), WRITE_TYPE_NO_RESPONSE)
+                }
+
+                txQueue.removeFirst()
             }
 
-            if(txQueue.size == 0 && continueOnQueueEnd && nextAct != null) {
+            if(txQueue.isEmpty() && continueOnQueueEnd && nextAct != null) {
                 leGatt = null
                 leService = null
+                done = true
                 gatt.disconnect()
             }
         }
@@ -213,14 +240,14 @@ class PuckJsWritingFragment : Fragment() {
         }
     }
 
-    private fun splitArray(originalArray: ByteArray, chunkSize: Int): List<ByteArray> {
+    private fun splitArrayForEspruino(originalArray: ByteArray): List<ByteArray> {
         val resultList = mutableListOf<ByteArray>()
         var i = 0
         while (i < originalArray.size) {
-            val endIndex = (i + chunkSize).coerceAtMost(originalArray.size)
+            val endIndex = (i + 20).coerceAtMost(originalArray.size)
             val chunkArray: ByteArray = originalArray.copyOfRange(i, endIndex)
             resultList.add(chunkArray)
-            i += chunkSize
+            i += 20
         }
         return resultList
     }
