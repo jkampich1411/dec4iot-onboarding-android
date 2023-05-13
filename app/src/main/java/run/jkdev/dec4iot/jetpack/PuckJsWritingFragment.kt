@@ -162,7 +162,7 @@ class PuckJsWritingFragment : Fragment() {
         leService = null
         serviceDisc.postValue(false)
 
-        val act = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToQrScanFragment()
+        val act = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToQrScanFragment(false)
         findNavController().navigate(act)
     }
 

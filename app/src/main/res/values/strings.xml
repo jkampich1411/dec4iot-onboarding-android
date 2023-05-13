@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="app_name" translatable="false">dec4IoT Onboarding</string>
 
     <!-- Strings used for fragments for navigation -->
@@ -56,6 +56,7 @@
 
     <!-- other -->
     <string name="something_went_wrong">Something went wrong! Hang tight, we\'re working on fixing it!</string>
+    <string name="not_like_this_bangle">Bangle.Js setup not here!</string>
 
     <!-- Done -->
     <string name="congratulations_text">You\'re done! Your device has been onboarded to dec4IoT.\n\nPlease restart your device.\nTo restart your Puck.Js take the battery out of it\'s compartment, wait 10 seconds and put it back in!\nTo restart your Bangle.Js press the button until \"Reloading…\" appears!\n\nHave fun!</string>

@@ -41,7 +41,7 @@ class QrSuccessFragment : Fragment() {
         val btn = view.findViewById<Button>(R.id.qr_returnBtn)
         btn.visibility = View.VISIBLE
         btn.setOnClickListener {
-            val act = QrSuccessFragmentDirections.actionQrSuccessFragmentToQrScanFragment2()
+            val act = QrSuccessFragmentDirections.actionQrSuccessFragmentToQrScanFragment2(false)
             findNavController().navigate(act)
         }
 
@@ -80,7 +80,7 @@ class QrSuccessFragment : Fragment() {
         puckJsButton.visibility = View.VISIBLE
 
         bangleJsButton.setOnClickListener {
-            val act = QrSuccessFragmentDirections.actionQrSuccessFragmentToBangleJsFragment(this@QrSuccessFragment.sensorId, this@QrSuccessFragment.endpoint)
+            val act = QrSuccessFragmentDirections.actionQrSuccessFragmentToBangleJsFragment(this@QrSuccessFragment.sensorId, this@QrSuccessFragment.endpoint, args.fromIntent)
             findNavController().navigate(act)
         }
 

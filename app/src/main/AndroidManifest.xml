@@ -29,11 +29,16 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Dec4IoTOnboarding"
-            android:launchMode="singleTask">
+            android:launchMode="standard">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="me.byjkdev.dec4iot.intents.banglejs.SETUP" />
             </intent-filter>
 
             <intent-filter>

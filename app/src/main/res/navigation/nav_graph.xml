@@ -23,6 +23,9 @@
         <action
             android:id="@+id/action_QrScanFragment_to_QrSuccessFragment"
             app:destination="@id/qrSuccessFragment" />
+        <argument
+            android:name="fromIntent"
+            app:argType="boolean" />
     </fragment>
     <fragment
         android:id="@+id/qrSuccessFragment"
@@ -43,22 +46,31 @@
         </action>
         <action
             android:id="@+id/action_qrSuccessFragment_to_bangleJsFragment"
-            app:destination="@id/bangleJsFragment" />
+            app:destination="@id/BangleJsNotLikeThis" />
         <action
             android:id="@+id/action_qrSuccessFragment_to_puckJsFragment"
             app:destination="@id/puckJsFragment" />
+        <argument
+            android:name="fromIntent"
+            app:argType="boolean" />
     </fragment>
     <fragment
-        android:id="@+id/bangleJsFragment"
-        android:name="run.jkdev.dec4iot.jetpack.BangleJsDetectionFragment"
+        android:id="@+id/BangleJsNotLikeThis"
+        android:name="run.jkdev.dec4iot.jetpack.BangleJsNotLikeThisFragment"
         android:label="@string/bangle_js_fragment_label"
-        tools:layout="@layout/fragment_bangle_js_detection" >
+        tools:layout="@layout/fragment_bangle_js_not_here" >
         <argument
             android:name="sensorId"
             app:argType="string" />
         <argument
             android:name="endpoint"
             app:argType="string" />
+        <action
+            android:id="@+id/action_BangleJsNotLikeThis_to_FirstFragment"
+            app:destination="@id/FirstFragment" />
+        <argument
+            android:name="fromIntent"
+            app:argType="boolean" />
     </fragment>
     <fragment
         android:id="@+id/puckJsFragment"

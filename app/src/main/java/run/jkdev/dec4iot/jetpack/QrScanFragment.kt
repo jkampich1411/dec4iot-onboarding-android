@@ -12,6 +12,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.mlkit.vision.barcode.common.Barcode
 import run.jkdev.dec4iot.jetpack.databinding.FragmentQrscannerBinding
@@ -23,6 +24,8 @@ import run.jkdev.dec4iot.jetpack.qrcode.Scanner
  * A simple [Fragment] subclass as the second destination in the navigation.
  */
 class QrScanFragment : Fragment() {
+    private val args: QrScanFragmentArgs by navArgs()
+
     private var alreadyScanned = false
 
     private var _binding: FragmentQrscannerBinding? = null
@@ -34,7 +37,7 @@ class QrScanFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         _binding = FragmentQrscannerBinding.inflate(inflater, container, false)
         return binding.root
@@ -47,7 +50,7 @@ class QrScanFragment : Fragment() {
 
         val code = it.getOrNull(0)
 
-        val act = QrScanFragmentDirections.actionQrScanFragmentToQrSuccessFragment(code!!.rawValue.toString())
+        val act = QrScanFragmentDirections.actionQrScanFragmentToQrSuccessFragment(code!!.rawValue.toString(), args.fromIntent)
         findNavController().navigate(act)
 
         this.alreadyScanned = true

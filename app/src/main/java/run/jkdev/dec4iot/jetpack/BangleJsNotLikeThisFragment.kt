@@ -5,31 +5,28 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.navigation.fragment.navArgs
 
-/**
- * A simple [Fragment] subclass.
- * Use the [BangleJsDetectionFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class BangleJsDetectionFragment : Fragment() {
-    private val args: BangleJsDetectionFragmentArgs by navArgs()
+class BangleJsNotLikeThisFragment : Fragment() {
+    val args: BangleJsNotLikeThisFragmentArgs by navArgs()
 
-    var sensorId: String = ""
-    var endpoint: String = ""
+    private var fromIntent: Boolean? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_bangle_js_detection, container, false)
+        return inflater.inflate(R.layout.fragment_bangle_js_not_here, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        this.sensorId = args.sensorId
-        this.endpoint = args.endpoint
+        fromIntent = args.fromIntent
+
+        view.findViewById<TextView>(R.id.test).text = fromIntent.toString()
+
     }
 }
