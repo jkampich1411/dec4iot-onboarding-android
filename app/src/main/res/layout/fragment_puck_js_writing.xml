@@ -57,7 +57,7 @@
             android:id="@+id/pleaseConfirm_puckJs"
             android:layout_width="369dp"
             android:layout_height="169dp"
-            android:text="@string/please_confirm_dont_be_stupid"
+            android:text="@string/please_confirm_dont_be_stupid_puckjs"
             android:textAlignment="center"
             android:textSize="20sp"
             android:textStyle="bold"

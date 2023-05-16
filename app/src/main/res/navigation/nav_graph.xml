@@ -65,12 +65,12 @@
         <argument
             android:name="endpoint"
             app:argType="string" />
-        <action
-            android:id="@+id/action_BangleJsNotLikeThis_to_FirstFragment"
-            app:destination="@id/FirstFragment" />
         <argument
             android:name="fromIntent"
             app:argType="boolean" />
+        <action
+            android:id="@+id/action_BangleJsNotLikeThis_to_onboardingDone"
+            app:destination="@id/onboardingDone" />
     </fragment>
     <fragment
         android:id="@+id/puckJsFragment"
@@ -83,9 +83,6 @@
         <argument
             android:name="endpoint"
             app:argType="string" />
-        <action
-            android:id="@+id/action_puckJsFragment_to_QrScanFragment"
-            app:destination="@id/QrScanFragment" />
         <action
             android:id="@+id/action_puckJsFragment_to_puckJsWritingFragment"
             app:destination="@id/puckJsWritingFragment" />
@@ -104,11 +101,6 @@
         <argument
             android:name="puckJsMac"
             app:argType="string" />
-        <action
-            android:id="@+id/action_puckJsWritingFragment_to_QrScanFragment"
-            app:destination="@id/QrScanFragment"
-            app:popUpTo="@id/puckJsWritingFragment"
-            app:popUpToInclusive="true" />
         <argument
             android:name="puckJsName"
             app:argType="string" />
@@ -120,11 +112,5 @@
         android:id="@+id/onboardingDone"
         android:name="run.jkdev.dec4iot.jetpack.OnboardingDone"
         android:label="@string/done_fragment_label"
-        tools:layout="@layout/fragment_onboarding_done">
-        <action
-            android:id="@+id/action_onboardingDone_to_FirstFragment"
-            app:destination="@id/FirstFragment"
-            app:popUpTo="@id/onboardingDone"
-            app:popUpToInclusive="true" />
-    </fragment>
+        tools:layout="@layout/fragment_onboarding_done"/>
 </navigation>

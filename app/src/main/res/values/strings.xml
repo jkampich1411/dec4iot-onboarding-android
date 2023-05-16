@@ -2,7 +2,7 @@
     <string name="app_name" translatable="false">dec4IoT Onboarding</string>
 
     <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">Welcome to dec4IoT</string>
+    <string name="first_fragment_label">dec4IoT Onboarding</string>
 
     <!-- Fragment Labels -->
     <string name="qr_fragment_label">Scan your QR Code</string>
@@ -48,7 +48,8 @@
     <string name="the_following_will_be_written">The following data will be written to %s</string>
     <string name="sensor_id_to_be_written">Sensor ID: %s</string>
     <string name="api_endpoint_to_be_written">API Endpoint:\n%s</string>
-    <string name="please_confirm_dont_be_stupid">Please double and/or triple check, that these are the correct values. If not, please restart the Onboarding-process. Writing these values correctly now is a lot easier than having to do this again with an added 15 seconds time constraint!</string>
+    <string name="please_confirm_dont_be_stupid_puckjs">Please double and/or triple check, that these are the correct values. If not, please restart the Onboarding-process. Writing these values correctly now is a lot easier than having to do this again with an added 15 seconds time constraint!</string>
+    <string name="please_confirm_dont_be_stupid_banglejs">Please double and/or triple check, that these are the correct values. If not, please restart the Onboarding-process. Writing these values correctly now is a lot easier than having to do this again later!</string>
     <string name="i_have_confirmed">I have checked that all values are correct</string>
     <string name="restart_btn">Restart</string>
     <string name="continue_btn">Continue</string>

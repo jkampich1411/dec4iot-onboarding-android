@@ -56,21 +56,19 @@ class QrScanFragment : Fragment() {
         this.alreadyScanned = true
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
+    private fun startScanning() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(publicApplicationContext)
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            val surfaceProvider = view.findViewById<PreviewView>(R.id.qr_previewSurface).surfaceProvider
+            val surfaceProvider = requireView().findViewById<PreviewView>(R.id.qr_previewSurface).surfaceProvider
 
             // Create the UseCase Preview
             val casePreview = PreviewUseCase(surfaceProvider).case
 
             // Create the Analysis UseCase
-            val caseAnalysis = AnalysisUseCase(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).case() {
-                imageProxy -> Scanner().processImageProxy(imageProxy, this@QrScanFragment.qrOnSuccess)
+            val caseAnalysis = AnalysisUseCase(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).case {
+                    imageProxy -> Scanner().processImageProxy(imageProxy, this@QrScanFragment.qrOnSuccess)
             }
 
             val selectedCamera = CameraSelector.DEFAULT_BACK_CAMERA
@@ -88,6 +86,12 @@ class QrScanFragment : Fragment() {
             }
 
         }, ContextCompat.getMainExecutor(publicApplicationContext))
+    }
+
+    override fun onViewCreated(viewI: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(viewI, savedInstanceState)
+
+        startScanning()
     }
 
     override fun onDestroyView() {

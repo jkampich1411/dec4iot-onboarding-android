@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -162,8 +163,10 @@ class PuckJsWritingFragment : Fragment() {
         leService = null
         serviceDisc.postValue(false)
 
-        val act = PuckJsWritingFragmentDirections.actionPuckJsWritingFragmentToQrScanFragment(false)
-        findNavController().navigate(act)
+        val restartIntent: Intent? = publicApplicationContext.packageManager
+            .getLaunchIntentForPackage(publicApplicationContext.packageName)
+        restartIntent!!.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        startActivity(restartIntent)
     }
 
     @SuppressLint("MissingPermission")
