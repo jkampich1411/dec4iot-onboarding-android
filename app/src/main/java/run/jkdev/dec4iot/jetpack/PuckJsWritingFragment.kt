@@ -39,8 +39,6 @@ class PuckJsWritingFragment : Fragment() {
     private val espruino = Espruino()
     private val le = BleAdapter()
 
-    private var pView: View? = null
-
     private var infoTitle: TextView? = null
     private var sensorIdText: TextView? = null
     private var apiEndpointText: TextView? = null
@@ -74,8 +72,6 @@ class PuckJsWritingFragment : Fragment() {
         endpoint = args.endpoint
         puckJsMac = args.puckJsMac
         puckJsName = args.puckJsName
-
-        pView = view
 
         infoTitle = view.findViewById(R.id.writingInfo_puckJs)
         sensorIdText = view.findViewById(R.id.sensorIdToBeWritten_puckJs)

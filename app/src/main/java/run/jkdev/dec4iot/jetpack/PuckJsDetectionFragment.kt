@@ -32,8 +32,6 @@ class PuckJsDetectionFragment : Fragment() {
     private var sensorId: String = ""
     private var endpoint: String = ""
 
-    private var pView: View? = null
-
     private val espruino = Espruino()
     private val le = BleAdapter()
 
@@ -67,7 +65,6 @@ class PuckJsDetectionFragment : Fragment() {
         this.sensorId = args.sensorId
         this.endpoint = args.endpoint
 
-        this.pView = view
         view.findViewById<Button>(R.id.continueButton).setOnClickListener(continueButtonListener)
 
         espruino.addCallback(this.scanCallback)
@@ -155,7 +152,7 @@ class PuckJsDetectionFragment : Fragment() {
         if(!le.isDeviceConnected(device!!.address)) {
             device.connectGatt(publicApplicationContext, false, gattConnectionCallback)
 
-            val infoText = pView!!.findViewById<TextView>(R.id.infoText_puckJs)
+            val infoText = requireView().findViewById<TextView>(R.id.infoText_puckJs)
             infoText.textSize = 26F
             infoText.text =
                 getString(R.string.selected_device, device.name)
@@ -253,7 +250,7 @@ class PuckJsDetectionFragment : Fragment() {
         }
         connectedDevices.clear()
 
-        val infoText = pView!!.findViewById<TextView>(R.id.infoText_puckJs)
+        val infoText = requireView().findViewById<TextView>(R.id.infoText_puckJs)
         infoText.textSize = 18F
         infoText.text =
             getString(R.string.choose_puckjs)

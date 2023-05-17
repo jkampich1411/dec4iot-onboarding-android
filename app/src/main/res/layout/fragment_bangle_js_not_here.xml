@@ -117,5 +117,45 @@
             app:layout_constraintTop_toBottomOf="@+id/apiEndpointToBeWritten_banglejs"
             app:layout_constraintVertical_bias="0.132" />
 
+        <TextView
+            android:id="@+id/no_banglejs"
+            android:layout_width="312dp"
+            android:layout_height="32dp"
+            android:text="@string/h_no_banglejs"
+            android:textAlignment="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.494"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.21" />
+
+        <TextView
+            android:id="@+id/tutorial_banglejs"
+            android:layout_width="400dp"
+            android:layout_height="185dp"
+            android:text="@string/m_tutorial_banglejs"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.454"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/sensorIdToBeWritten_banglejs"
+            app:layout_constraintVertical_bias="0.315" />
+
+        <Button
+            android:id="@+id/restart_btn_banglejs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/restart_btn"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tutorial_banglejs" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

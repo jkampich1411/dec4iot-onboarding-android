@@ -24,7 +24,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Dec4IoTOnboarding"
-        tools:targetApi="s">
+        tools:targetApi="P">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -37,15 +37,14 @@
             </intent-filter>
 
             <intent-filter>
-                <category android:name="android.intent.category.DEFAULT" />
                 <action android:name="me.byjkdev.dec4iot.intents.banglejs.SETUP" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
             <intent-filter>
-                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <action android:name="me.byjkdev.dec4iot.intents.banglejs.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-
-            <meta-data android:name="android.nfc.action.TECH_DISCOVERED" android:resource="@xml/techlist" />
 
         </activity>
 

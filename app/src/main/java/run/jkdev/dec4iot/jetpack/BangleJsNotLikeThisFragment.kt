@@ -3,10 +3,12 @@ package run.jkdev.dec4iot.jetpack
 import android.content.Intent
 import android.os.Bundle
 import android.os.VibrationEffect
+import android.text.method.LinkMovementMethod
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnClickListener
+import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
@@ -26,8 +28,6 @@ class BangleJsNotLikeThisFragment : Fragment() {
 
     private val gson = Gson()
 
-    private var funView: View? = null
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -38,8 +38,6 @@ class BangleJsNotLikeThisFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        funView = view
 
         fromIntent = args.fromIntent
         sensorIdValue = args.sensorId
@@ -53,28 +51,40 @@ class BangleJsNotLikeThisFragment : Fragment() {
         val restart: Button = view.findViewById(R.id.restart_banglejs)
         val confirm: Button = view.findViewById(R.id.write_banglejs)
 
+        val noHeader: TextView = view.findViewById(R.id.no_banglejs)
+        val tutorial: TextView = view.findViewById(R.id.tutorial_banglejs)
+        val restartBtn: Button = view.findViewById(R.id.restart_btn_banglejs)
+
         if(fromIntent == true) {
-            writingInfo.visibility = View.VISIBLE
+            writingInfo.visibility = VISIBLE
             writingInfo.text =
                 getString(R.string.the_following_will_be_written, "your Bangle.JS")
 
-            sensorId.visibility = View.VISIBLE
+            sensorId.visibility = VISIBLE
             sensorId.text =
                 getString(R.string.sensor_id_to_be_written, sensorIdValue)
 
-            apiEndpoint.visibility = View.VISIBLE
+            apiEndpoint.visibility = VISIBLE
             apiEndpoint.text =
                 getString(R.string.api_endpoint_to_be_written, apiEndpointValue)
 
-            pleaseConfirm.visibility = View.VISIBLE
+            pleaseConfirm.visibility = VISIBLE
 
-            confirmed.visibility = View.VISIBLE
+            confirmed.visibility = VISIBLE
 
-            restart.visibility = View.VISIBLE
-            restart.setOnClickListener(restartBtnListener)
+            restart.visibility = VISIBLE
+            restart.setOnClickListener(restartBtnWithIntentListener)
 
-            confirm.visibility = View.VISIBLE
+            confirm.visibility = VISIBLE
             confirm.setOnClickListener(continueBtnListener)
+        } else if(fromIntent == false) {
+            noHeader.visibility = VISIBLE
+
+            tutorial.visibility = VISIBLE
+            tutorial.movementMethod = LinkMovementMethod.getInstance()
+
+            restartBtn.visibility = VISIBLE
+            restartBtn.setOnClickListener(restartBtnListener)
         }
 
     }
@@ -83,7 +93,7 @@ class BangleJsNotLikeThisFragment : Fragment() {
         val config = BangleJsConfig(true, sensorIdValue!!.toInt(), apiEndpointValue!!, 60)
         val configJson = gson.toJson(config)
 
-        val confirmed: CheckBox = funView!!.findViewById(R.id.valuesChecked_banglejs)
+        val confirmed: CheckBox = requireView().findViewById(R.id.valuesChecked_banglejs)
         if(!confirmed.isChecked) {
             Toast.makeText(publicApplicationContext, R.string.please_confirm_all_data, Toast.LENGTH_LONG).show()
             publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
@@ -94,12 +104,23 @@ class BangleJsNotLikeThisFragment : Fragment() {
             val feedbackIntent = Intent("com.banglejs.uart.tx")
             feedbackIntent.putExtra("line", "Bangle.buzz(1000, 1)")
 
+            val restartBangleApp = Intent("com.banglejs.uart.tx")
+            restartBangleApp.putExtra("line", "startLogic()")
+
             publicApplicationContext.sendBroadcast(writeIntent)
             publicApplicationContext.sendBroadcast(feedbackIntent)
+            publicApplicationContext.sendBroadcast(restartBangleApp)
 
             val act = BangleJsNotLikeThisFragmentDirections.actionBangleJsNotLikeThisToOnboardingDone()
             findNavController().navigate(act)
         }
+    }
+
+    private val restartBtnWithIntentListener = OnClickListener {
+        val restartIntent = Intent("me.byjkdev.dec4iot.intents.banglejs.SETUP")
+        restartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        restartIntent.addCategory("android.intent.category.DEFAULT")
+        startActivity(restartIntent)
     }
 
     private val restartBtnListener = OnClickListener {

@@ -1,7 +1,6 @@
 package run.jkdev.dec4iot.jetpack
 
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -32,14 +31,30 @@ class FirstFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val isFromSetupIntent: Boolean = requireActivity().intent.action == "me.byjkdev.dec4iot.intents.banglejs.SETUP"
+        val isFromSettingsIntent: Boolean = requireActivity().intent.action == "me.byjkdev.dec4iot.intents.banglejs.SETTINGS"
 
-        Log.i(TAG, requireActivity().intent.action.toString())
+        if(isFromSetupIntent) {
+            binding.textviewFirst.text =
+                getString(R.string.from_bangle)
+        } else if(isFromSettingsIntent) {
+            binding.buttonFirst.text =
+                getString(R.string.settings_btn)
+
+            binding.textviewFirst.text =
+                getString(R.string.settings_desc)
+        }
 
         binding.buttonFirst.setOnClickListener {
-            val isFromIntent: Boolean = requireActivity().intent.action == "me.byjkdev.dec4iot.intents.banglejs.SETUP"
-
-            val act = FirstFragmentDirections.actionFirstFragmentToSecondFragment(isFromIntent)
-            findNavController().navigate(act)
+            if(isFromSetupIntent) {
+                val act = FirstFragmentDirections.actionFirstFragmentToSecondFragment(true)
+                findNavController().navigate(act)
+            } else if(isFromSettingsIntent) {
+                // FUTURE
+            } else {
+                val act = FirstFragmentDirections.actionFirstFragmentToSecondFragment(false)
+                findNavController().navigate(act)
+            }
         }
     }
 
