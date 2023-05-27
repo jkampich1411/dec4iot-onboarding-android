@@ -12,4 +12,16 @@
         android:orderInCategory="100"
         android:title="@string/action_check_permissions"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_check_backgroundloc"
+        android:orderInCategory="100"
+        android:title="@string/action_check_backgroundloc_permissions"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_check_batopt"
+        android:orderInCategory="100"
+        android:title="@string/action_check_battery_optimisation"
+        app:showAsAction="never" />
 </menu>

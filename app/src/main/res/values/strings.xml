@@ -26,8 +26,12 @@
 
     <!-- Permissions Check -->
     <string name="action_check_permissions">Check for Permissions</string>
+    <string name="action_check_backgroundloc_permissions">Check for Location Permissions</string>
     <string name="permissions_granted">Permissions granted! 🥳</string>
     <string name="permission_not_granted_no_continue">Some permissions were not granted. Please restart the app, grant ALL permissions and try again! 😭</string>
+    <string name="why_we_need_perm_bgloc">Background location is required for emergencies from Bangle.js</string>
+    <string name="action_check_battery_optimisation">Check for Battery Optimisations</string>
+    <string name="bat_optim_off">Battery Optimisations disabled! 🥳</string>
 
     <!-- Wrong QR Code -->
     <string name="qr_no_support">QR code not created by dec4IoT!</string>
