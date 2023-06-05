@@ -18,13 +18,19 @@ data class BangleJsSendDataInfo(
     val sensor_endpoint: String,
 
     @SerializedName("mac_address")
-    val mac_address: String
+    val mac_address: String,
+
+    @SerializedName("bpm_only")
+    val bpm_only: Boolean,
+
+    @SerializedName("trigger_manual")
+    val manually_triggered: Boolean
 )
 
 data class BangleJsSendDataData(
-    val accl: BangleJsAccelData,
-    val baro: BangleJsBaroData,
-    val comp: BangleJsCompData,
-    val health: BangleJsHrmData,
-    val battery: Number
+    val acl: BangleJsAccelData?,
+    val bar: BangleJsBaroData?,
+    val com: BangleJsCompData?,
+    val hrm: BangleJsHrmData?,
+    val bat: Number?
 )

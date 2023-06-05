@@ -53,7 +53,7 @@
 
         </activity>
 
-        <receiver android:name=".BangleJsSendDataReceiver" android:exported="true"
+        <receiver android:name=".BangleJsDataReceiver" android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="me.byjkdev.dec4iot.intents.banglejs.SEND_DATA" />

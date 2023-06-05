@@ -28,8 +28,9 @@ import run.jkdev.dec4iot.jetpack.gsonmodels.SenmlField
 import java.io.IOException
 import java.time.Instant
 
-class BangleJsSendDataReceiver : BroadcastReceiver() {
-    private val senmlFields = mutableListOf<SenmlField>()
+class BangleJsDataReceiver : BroadcastReceiver() {
+    private lateinit var idField: SenmlField
+
     private val gson = Gson()
 
     private lateinit var locationClient: FusedLocationProviderClient
@@ -38,7 +39,7 @@ class BangleJsSendDataReceiver : BroadcastReceiver() {
     private lateinit var info: BangleJsSendDataInfo
     private lateinit var sensors: BangleJsSendDataData
 
-    private lateinit var contxt: Context
+    private lateinit var context: Context
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if(context == null || intent == null) { return }
@@ -52,68 +53,114 @@ class BangleJsSendDataReceiver : BroadcastReceiver() {
 
             locationClient = LocationServices.getFusedLocationProviderClient(context)
 
-            contxt = context
+            this.context = context
 
             if (checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return
             }
 
-            val fieldsCollection: Collection<SenmlField> = listOf(
-                SenmlField(
-                    base_name = "urn:dev:mac:${formatMacAddress(info.mac_address)}",
-                    base_time = getCurrentEpochSecond(),
+            idField = SenmlField(
+                base_name = "urn:dev:mac:${formatMacAddress(info.mac_address)}",
+                base_time = getCurrentEpochSecond(),
 
-                    name = "identifier",
-                    value = info.sensor_id
-                ),
+                name = "identifier",
+                value = info.sensor_id
+            )
+
+            if(info.bpm_only) {
+                val fields = listOf(
+                    idField,
+                    SenmlField(
+                        name = "bpm",
+                        value = sensors.hrm!!.bpm,
+                        unit = "beat/min"
+                    ),
+
+                    SenmlField(
+                        name = "bpmConfidence",
+                        value = sensors.hrm!!.bpmConfidence
+                    ),
+                )
+
+                val jsonObject = gson.toJson(fields)
+
+                val inputData = Data.Builder()
+                    .putString("endpoint", "https://${info.sensor_endpoint}")
+                    .putString("json", jsonObject.toString())
+                    .build()
+
+                val workRequest: WorkRequest =
+                    OneTimeWorkRequestBuilder<UploadWorker>()
+                        .setInputData(inputData)
+                        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                        .build()
+
+                WorkManager
+                    .getInstance(context)
+                    .enqueue(workRequest)
+
+                return
+            }
+
+            val fields = listOf(
+                idField,
 
                 SenmlField(
                     name = "batt",
                     unit = "%EL",
-                    value = sensors.battery
+                    value = sensors.bat
                 ),
 
                 SenmlField(
                     name = "heading",
-                    value = sensors.comp.heading
+                    value = sensors.com!!.heading
                 ),
 
                 SenmlField(
                     name = "temperature",
-                    value = sensors.baro.temperature
+                    value = sensors.bar!!.temperature
                 ),
 
                 SenmlField(
                     name = "pressure",
-                    value = sensors.baro.pressure,
+                    value = sensors.bar!!.pressure,
                     unit = "hPa"
                 ),
 
                 SenmlField(
                     name = "altitude",
-                    value = sensors.baro.altitude,
+                    value = sensors.bar!!.altitude,
                     unit = "m"
                 ),
 
                 SenmlField(
                     name = "steps",
-                    value = sensors.health.steps,
+                    value = sensors.hrm!!.steps,
                     unit = "counter"
                 ),
 
                 SenmlField(
-                    name = "bpm",
-                    value = sensors.health.bpm,
-                    unit = "beat/min"
-                ),
-
-                SenmlField(
-                    name = "bpmConfidence",
-                    value = sensors.health.bpmConfidence
+                    name = "manually_triggered",
+                    boolean_value = info.manually_triggered,
                 )
             )
 
-            senmlFields.addAll(fieldsCollection)
+            val jsonObject = gson.toJson(fields)
+
+            val inputData = Data.Builder()
+                .putString("endpoint", "https://${info.sensor_endpoint}")
+                .putString("json", jsonObject.toString())
+                .build()
+
+            val workRequest: WorkRequest =
+                OneTimeWorkRequestBuilder<UploadWorker>()
+                    .setInputData(inputData)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                    .build()
+
+            WorkManager
+                .getInstance(this@BangleJsDataReceiver.context)
+                .enqueue(workRequest)
 
             val locationRequest = CurrentLocationRequest.Builder()
                 .setGranularity(Granularity.GRANULARITY_FINE)
@@ -155,22 +202,25 @@ class BangleJsSendDataReceiver : BroadcastReceiver() {
     }
 
     private fun latLongFieldsArrived(lat: Number, long: Number) {
-        val latField = SenmlField(
-            name = "latitude",
-            value = lat,
-            unit = "lat"
+        val idFieldNew = idField
+        idFieldNew.base_time = getCurrentEpochSecond()
+
+        val fields = listOf(
+            idFieldNew,
+            SenmlField(
+                name = "latitude",
+                value = lat,
+                unit = "lat"
+            ),
+
+            SenmlField(
+                name = "longitude",
+                value = long,
+                unit = "long"
+            )
         )
 
-        val longField = SenmlField(
-            name = "longitude",
-            value = long,
-            unit = "long"
-        )
-
-        senmlFields.add(latField)
-        senmlFields.add(longField)
-
-        val jsonObject = gson.toJson(senmlFields)
+        val jsonObject = gson.toJson(fields)
 
         val inputData = Data.Builder()
             .putString("endpoint", "https://${info.sensor_endpoint}")
@@ -184,7 +234,7 @@ class BangleJsSendDataReceiver : BroadcastReceiver() {
                 .build()
 
         WorkManager
-            .getInstance(this@BangleJsSendDataReceiver.contxt)
+            .getInstance(this@BangleJsDataReceiver.context)
             .enqueue(workRequest)
     }
 
@@ -199,7 +249,7 @@ class BangleJsSendDataReceiver : BroadcastReceiver() {
         override fun doWork(): Result {
             val request = Request.Builder()
                 .tag(TAG)
-                .url(inputData.getString("endpoint")!!)
+                .url("https://dec4iot.data-container.net/api/data")//inputData.getString("endpoint")!!)
                 .post(inputData.getString("json")!!.toRequestBody("application/json".toMediaType()))
                 .build()
 
