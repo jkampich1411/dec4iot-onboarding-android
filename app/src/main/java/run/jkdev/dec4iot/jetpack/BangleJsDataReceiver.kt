@@ -148,7 +148,7 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             val jsonObject = gson.toJson(fields)
 
             val inputData = Data.Builder()
-                .putString("endpoint", "https://${info.sensor_endpoint}")
+                .putString("endpoint", "https://www.${info.sensor_endpoint}")
                 .putString("json", jsonObject.toString())
                 .build()
 
@@ -223,7 +223,7 @@ class BangleJsDataReceiver : BroadcastReceiver() {
         val jsonObject = gson.toJson(fields)
 
         val inputData = Data.Builder()
-            .putString("endpoint", "https://${info.sensor_endpoint}")
+            .putString("endpoint", "https://www.${info.sensor_endpoint}")
             .putString("json", jsonObject.toString())
             .build()
 
@@ -249,7 +249,7 @@ class BangleJsDataReceiver : BroadcastReceiver() {
         override fun doWork(): Result {
             val request = Request.Builder()
                 .tag(TAG)
-                .url("https://dec4iot.data-container.net/api/data")//inputData.getString("endpoint")!!)
+                .url(inputData.getString("endpoint")!!)
                 .post(inputData.getString("json")!!.toRequestBody("application/json".toMediaType()))
                 .build()
 
@@ -265,12 +265,16 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             try {
                 okHttpClient.newCall(request).enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
-                        Log.e(TAG, "HTTP Request threw:", e)
+                        Log.e(TAG, "HTTP Request threw:\n${e.stackTrace}")
                         throw Exception("HTTP Request threw", e)
                     }
 
                     override fun onResponse(call: Call, response: Response) {
                         Log.i(TAG, "HTTP Request returned response:\n${response}")
+                        Log.i(TAG, "type: ${response.request.method}")
+                        Log.i(TAG, "code: ${response.code}")
+                        Log.i(TAG, "headers: ${response.headers}")
+                        Log.i(TAG, "data ${response.body.toString()}")
                         response.close()
                     }
 
