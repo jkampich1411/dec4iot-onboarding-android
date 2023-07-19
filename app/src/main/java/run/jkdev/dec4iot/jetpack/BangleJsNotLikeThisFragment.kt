@@ -17,12 +17,12 @@ import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.gson.Gson
+import run.jkdev.dec4iot.jetpack.MainActivity.Companion.fromIntent
 import run.jkdev.dec4iot.jetpack.gsonmodels.BangleJsConfig
 
 class BangleJsNotLikeThisFragment : Fragment() {
-    val args: BangleJsNotLikeThisFragmentArgs by navArgs()
+    private val args: BangleJsNotLikeThisFragmentArgs by navArgs()
 
-    private var fromIntent: Boolean? = null
     private var sensorIdValue: String? = null
     private var apiEndpointValue: String? = null
 
@@ -39,8 +39,8 @@ class BangleJsNotLikeThisFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        fromIntent = args.fromIntent
-        sensorIdValue = args.sensorId
+        fromIntent = requireActivity().intent.action == "me.byjkdev.dec4iot.intents.banglejs.SETUP"
+        sensorIdValue = args.sensorId.toString()
         apiEndpointValue = args.endpoint
 
         val writingInfo: TextView = view.findViewById(R.id.writingInfo_banglejs)
@@ -55,7 +55,7 @@ class BangleJsNotLikeThisFragment : Fragment() {
         val tutorial: TextView = view.findViewById(R.id.tutorial_banglejs)
         val restartBtn: Button = view.findViewById(R.id.restart_btn_banglejs)
 
-        if(fromIntent == true) {
+        if(fromIntent) {
             writingInfo.visibility = VISIBLE
             writingInfo.text =
                 getString(R.string.the_following_will_be_written, "your Bangle.JS")
@@ -77,7 +77,7 @@ class BangleJsNotLikeThisFragment : Fragment() {
 
             confirm.visibility = VISIBLE
             confirm.setOnClickListener(continueBtnListener)
-        } else if(fromIntent == false) {
+        } else {
             noHeader.visibility = VISIBLE
 
             tutorial.visibility = VISIBLE
@@ -95,8 +95,8 @@ class BangleJsNotLikeThisFragment : Fragment() {
 
         val confirmed: CheckBox = requireView().findViewById(R.id.valuesChecked_banglejs)
         if(!confirmed.isChecked) {
-            Toast.makeText(publicApplicationContext, R.string.please_confirm_all_data, Toast.LENGTH_LONG).show()
-            publicVibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
+            Toast.makeText(requireActivity().applicationContext, R.string.please_confirm_all_data, Toast.LENGTH_LONG).show()
+            MainActivity.vibrator.vibrate(VibrationEffect.createOneShot(1000, 100))
         } else {
             val writeIntent = Intent("com.banglejs.uart.tx")
             writeIntent.putExtra("line", "require('Storage').writeJSON('dec4iot.settings.json', $configJson)")
@@ -107,9 +107,9 @@ class BangleJsNotLikeThisFragment : Fragment() {
             val restartBangleApp = Intent("com.banglejs.uart.tx")
             restartBangleApp.putExtra("line", "startLogic()")
 
-            publicApplicationContext.sendBroadcast(writeIntent)
-            publicApplicationContext.sendBroadcast(feedbackIntent)
-            publicApplicationContext.sendBroadcast(restartBangleApp)
+            requireActivity().applicationContext.sendBroadcast(writeIntent)
+            requireActivity().applicationContext.sendBroadcast(feedbackIntent)
+            requireActivity().applicationContext.sendBroadcast(restartBangleApp)
 
             val act = BangleJsNotLikeThisFragmentDirections.actionBangleJsNotLikeThisToOnboardingDone()
             findNavController().navigate(act)
@@ -124,8 +124,8 @@ class BangleJsNotLikeThisFragment : Fragment() {
     }
 
     private val restartBtnListener = OnClickListener {
-        val restartIntent: Intent? = publicApplicationContext.packageManager
-            .getLaunchIntentForPackage(publicApplicationContext.packageName)
+        val restartIntent: Intent? = requireActivity().applicationContext.packageManager
+            .getLaunchIntentForPackage(requireActivity().applicationContext.packageName)
         restartIntent!!.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         startActivity(restartIntent)
     }

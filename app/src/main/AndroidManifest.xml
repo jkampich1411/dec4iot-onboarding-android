@@ -3,22 +3,52 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.hardware.camera.any" />
-    <uses-feature android:name="android.hardware.nfc" android:required="true" />
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
 
-    <uses-permission android:name="android.permission.INTERNET" android:required="true" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" android:required="true" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" android:required="true" />
-    <uses-permission android:name="android.permission.CAMERA" android:required="true" />
-    <uses-permission android:name="android.permission.BLUETOOTH" android:required="true" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:required="true" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" android:required="true" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:required="true" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:required="true" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" android:required="true" />
-    <uses-permission android:name="android.permission.NFC" android:required="true" />
-    <uses-permission android:name="android.permission.VIBRATE" android:required="true" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" android:required="true" />
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.CAMERA"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_CONNECT"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.NFC"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.VIBRATE"
+        android:required="true" />
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
@@ -28,35 +58,54 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Dec4IoTOnboarding"
-        tools:targetApi="P"
-        tools:ignore="ObsoleteSdkInt,UnusedAttribute">
+        tools:ignore="ObsoleteSdkInt,UnusedAttribute"
+        tools:targetApi="P">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Dec4IoTOnboarding"
-            android:launchMode="standard">
-
+            android:launchMode="standard"
+            android:theme="@style/Theme.Dec4IoTOnboarding">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="me.byjkdev.dec4iot.intents.banglejs.SETUP" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="me.byjkdev.dec4iot.intents.banglejs.SETTINGS" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-
         </activity>
+        <activity
+            android:name=".PuckJsUriActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
 
-        <receiver android:name=".BangleJsDataReceiver" android:exported="true"
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:host="puckjs"
+                    android:scheme="jkdev-dec4iot" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".QrScanningActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".BangleJsDataReceiver"
+            android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="me.byjkdev.dec4iot.intents.banglejs.SEND_DATA" />
+
                 <data android:mimeType="application/json" />
             </intent-filter>
         </receiver>

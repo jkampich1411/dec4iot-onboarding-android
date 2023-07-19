@@ -10,7 +10,6 @@ import android.nfc.NfcAdapter
 import android.nfc.NfcAdapter.*
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -25,10 +24,9 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import run.jkdev.dec4iot.jetpack.databinding.ActivityMainBinding
 import run.jkdev.dec4iot.jetpack.gms.GMSModuleRequestClient
 
-lateinit var publicApplicationContext: Context
-lateinit var publicMainActivityThis: MainActivity
-lateinit var publicVibrator: Vibrator
 const val TAG = "DEC4IOTJETPACK"
+
+var publicApplicationContext: Context? = null
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,17 +36,21 @@ class MainActivity : AppCompatActivity() {
     private var nfcAdapter: NfcAdapter? = null
     private var nfcDataViewModel: NfcDataViewModel? = null
 
-    private var vibrator: Vibrator? = null
-
     private var powerManager: PowerManager? = null
 
+    companion object {
+        var running = false
+        var fromIntent = false
+
+        lateinit var vibrator: Vibrator
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         WindowCompat.setDecorFitsSystemWindows(window,false)
         super.onCreate(savedInstanceState)
 
         publicApplicationContext = applicationContext
-        publicMainActivityThis = this
+        running = true
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -64,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         this.nfcAdapter = getDefaultAdapter(this)
         this.nfcDataViewModel = ViewModelProvider(this)[NfcDataViewModel::class.java]
 
-        this.vibrator = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        vibrator = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
         } else {
@@ -73,72 +75,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         this.powerManager = getSystemService(POWER_SERVICE) as PowerManager
-
-        publicVibrator = this.vibrator!!
-
-        try {
-            nfcDataViewModel?.shouldBeListening!!.observeForever { if(it == true) { this@MainActivity.startNfcAdapter() } }
-        } catch (ex: Throwable) {
-            Log.e(TAG, "Error Activating NfcAdapter", ex)
-        }
-    }
-
-    private fun startNfcAdapter() {
-        if (nfcAdapter != null) {
-            val options = Bundle()
-            // Work around for some broken Nfc firmware implementations that poll the card too fast
-            options.putInt(EXTRA_READER_PRESENCE_CHECK_DELAY, 100)
-
-            // Enable ReaderMode for all types of card and disable platform sounds
-            nfcAdapter?.enableReaderMode(this,
-                {
-                    try {
-                        this.nfcDataViewModel?.nfcData?.postValue(it)
-                        this.vibrator?.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
-                    } catch (ex: Throwable) {
-                        Log.e(TAG, "Something went wrong here.", ex)
-                    }
-                },
-                FLAG_READER_NFC_A or
-                        FLAG_READER_NFC_B or
-                        FLAG_READER_NFC_F or
-                        FLAG_READER_NFC_V or
-                        FLAG_READER_NFC_BARCODE or
-                        FLAG_READER_NO_PLATFORM_SOUNDS,
-                options
-            )
-
-            try {
-                nfcDataViewModel?.shouldBeListening!!.observeForever { if (!it) { stopNfcAdapter() } }
-            } catch (ex: Throwable) {
-                Log.e(TAG, "Error deactivating NfcReader", ex)
-            }
-        }
-    }
-
-    private fun stopNfcAdapter() {
-        try {
-            nfcAdapter!!.disableReaderMode(this@MainActivity)
-
-        } catch (ex: Throwable) { Log.e(TAG, "Error deactivating NfcReader", ex) }
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        try {
-            if(nfcDataViewModel?.shouldBeListening!!.value!!) { this.startNfcAdapter() }
-        } catch (ex: Throwable) {
-            Log.e(TAG, "Error activating NfcReader", ex)
-        }
-
     }
 
     override fun onPause() {
         super.onPause()
 
-        stopNfcAdapter()
+        running = false
     }
+
+    override fun onResume() {
+        super.onResume()
+
+        running = true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        running = false
+        publicApplicationContext = null
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -158,12 +115,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkBarcodeScanningAvailable(): Boolean {
+        val optMod = BarcodeScanning.getClient()
+        GMSModuleRequestClient().checkAvailability(optMod) {
+            if(it.areModulesAvailable()) {
+                Toast.makeText(applicationContext, R.string.modules_available_toast, Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(applicationContext, R.string.modules_unavailable_toast, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        return true
+    }
+
     override fun onSupportNavigateUp(): Boolean {
         return false
     }
 
     private fun checkPermissions(): Boolean {
-        if(allPermGranted()) {
+        if(allPermGranted(applicationContext)) {
             Toast.makeText(applicationContext, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
         } else {
             requestPermissions(REQUIRED_PERMISSIONS, REQUIRED_PERMISSION_CODE)
@@ -174,7 +144,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("InlinedApi")  // API level gets checked with `backgroundLocPermGranted()`
     private fun checkBackgroundLocationPermission(): Boolean {
-        if(backgroundLocPermGranted()) {
+        if(backgroundLocPermGranted(applicationContext)) {
             Toast.makeText(applicationContext, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
         } else {
             if(shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
@@ -204,19 +174,6 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-fun checkBarcodeScanningAvailable(): Boolean {
-    val optMod = BarcodeScanning.getClient()
-    GMSModuleRequestClient().checkAvailability(optMod) {
-        if(it.areModulesAvailable()) {
-            Toast.makeText(publicApplicationContext, R.string.modules_available_toast, Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(publicApplicationContext, R.string.modules_unavailable_toast, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    return true
-}
-
 private val REQUIRED_PERMISSIONS = if(Build.VERSION.SDK_INT >= 31) {
     mutableListOf (
         Manifest.permission.CAMERA,
@@ -243,5 +200,5 @@ private val REQUIRED_PERMISSIONS = if(Build.VERSION.SDK_INT >= 31) {
 
 private const val REQUIRED_PERMISSION_CODE = 10
 
-fun allPermGranted() = REQUIRED_PERMISSIONS.all { ContextCompat.checkSelfPermission(publicApplicationContext, it) == PackageManager.PERMISSION_GRANTED }
-fun backgroundLocPermGranted() = if (Build.VERSION.SDK_INT >= 29) ContextCompat.checkSelfPermission(publicApplicationContext, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED else true
+fun allPermGranted(context: Context) = REQUIRED_PERMISSIONS.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+fun backgroundLocPermGranted(context: Context) = if (Build.VERSION.SDK_INT >= 29) ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED else true

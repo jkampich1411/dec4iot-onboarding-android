@@ -33,9 +33,15 @@
     <string name="action_check_battery_optimisation">Check for Battery Optimisations</string>
     <string name="bat_optim_off">Battery Optimisations disabled! 🥳</string>
 
-    <!-- Wrong QR Code -->
+    <!-- QR Results -->
+    <string name="qr_id">Sensor Id: %s</string>
+    <string name="qr_endpoint">Endpoint: %s</string>
     <string name="qr_no_support">QR code not created by dec4IoT!</string>
     <string name="qr_no_support_button">Try again</string>
+    <string name="qr_generic_fail">Something went wrong. Try closing any other app that might be accessing the camera and try again!</string>
+    <string name="qr_access_fail">Close any other app that might be accessing the camera.</string>
+    <string name="qr_button_press_caught">Something went wrong! Try pressing that again!</string>
+
 
     <!-- Select your Device -->
     <string name="select_model">Select your device</string>

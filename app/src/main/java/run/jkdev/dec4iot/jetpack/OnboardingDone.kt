@@ -25,8 +25,8 @@ class OnboardingDone : Fragment() {
     }
 
     private val doneBtnListener = View.OnClickListener {
-        val restartIntent: Intent? = publicApplicationContext.packageManager
-            .getLaunchIntentForPackage(publicApplicationContext.packageName)
+        val restartIntent: Intent? = requireActivity().applicationContext.packageManager
+            .getLaunchIntentForPackage(requireActivity().applicationContext.packageName)
         restartIntent!!.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         startActivity(restartIntent)
     }
