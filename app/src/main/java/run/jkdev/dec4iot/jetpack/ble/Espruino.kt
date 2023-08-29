@@ -79,7 +79,6 @@ class Espruino(leAdapter: BleAdapter) {
 
         leScanner.stopScan(scanCallback)
         scanning = false
-
     }
 
 

@@ -12,7 +12,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
+import run.jkdev.dec4iot.jetpack.MainActivity.Companion.AppLinkData
+import run.jkdev.dec4iot.jetpack.gsonmodels.OnboardingQr
 import run.jkdev.dec4iot.jetpack.interfaces.QrResult
+import run.jkdev.dec4iot.jetpack.qrcode.QrScanningActivity
 
 class QrFragment : Fragment() {
     override fun onCreateView(
@@ -47,7 +50,10 @@ class QrFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        startQrForResult.launch(Intent(requireContext(), QrScanningActivity::class.java))
+        if(AppLinkData.value != null) {
+            val data: OnboardingQr = AppLinkData.value!!
+            qrCodeDone(data.sensorId!!.toShort(), data.endpoint!!)
+        } else startQrForResult.launch(Intent(requireContext(), QrScanningActivity::class.java))
     }
 
     private fun noThisWontWork(textOverride: CharSequence? = null) {

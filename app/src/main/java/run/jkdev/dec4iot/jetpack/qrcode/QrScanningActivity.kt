@@ -1,4 +1,4 @@
-package run.jkdev.dec4iot.jetpack
+package run.jkdev.dec4iot.jetpack.qrcode
 
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -13,11 +13,10 @@ import com.google.android.gms.tasks.OnSuccessListener
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.gson.Gson
 import com.google.mlkit.vision.barcode.common.Barcode
+import run.jkdev.dec4iot.jetpack.R
+import run.jkdev.dec4iot.jetpack.TAG
 import run.jkdev.dec4iot.jetpack.gsonmodels.OnboardingQr
 import run.jkdev.dec4iot.jetpack.interfaces.QrResult
-import run.jkdev.dec4iot.jetpack.qrcode.AnalysisUseCase
-import run.jkdev.dec4iot.jetpack.qrcode.PreviewUseCase
-import run.jkdev.dec4iot.jetpack.qrcode.Scanner
 
 class QrScanningActivity : AppCompatActivity() {
     private lateinit var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>

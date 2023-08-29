@@ -277,7 +277,6 @@ class BangleJsDataReceiver : BroadcastReceiver() {
                         Log.i(TAG, "data ${response.body.toString()}")
                         response.close()
                     }
-
                 })
             } catch (e: Exception) {
                 return Result.failure()

@@ -7,6 +7,7 @@ import android.text.method.LinkMovementMethod
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.INVISIBLE
 import android.view.View.OnClickListener
 import android.view.View.VISIBLE
 import android.view.ViewGroup
@@ -17,8 +18,14 @@ import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.gson.Gson
-import run.jkdev.dec4iot.jetpack.MainActivity.Companion.fromIntent
+import run.jkdev.dec4iot.jetpack.MainActivity.Companion.BangleJsInstalled
 import run.jkdev.dec4iot.jetpack.gsonmodels.BangleJsConfig
+
+// Not everyone is going to get the "NotLikeThis" reference.
+// It's a twitch emote to display something going drastically wrong (usually at a gaming event).
+// Originally this Fragment was planned to only display instructions on how to actually set up the Bangle.js
+// But I adapted it so it can show an error and instructions by default,
+// and configures the Bangle.js when a specific intent was received.
 
 class BangleJsNotLikeThisFragment : Fragment() {
     private val args: BangleJsNotLikeThisFragmentArgs by navArgs()
@@ -38,11 +45,32 @@ class BangleJsNotLikeThisFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        fromIntent = requireActivity().intent.action == "me.byjkdev.dec4iot.intents.banglejs.SETUP"
         sensorIdValue = args.sensorId.toString()
         apiEndpointValue = args.endpoint
 
+        val noHeader: TextView = view.findViewById(R.id.no_banglejs)
+        val tutorial: TextView = view.findViewById(R.id.tutorial_banglejs)
+        val restartBtn: Button = view.findViewById(R.id.restart_btn_banglejs)
+
+        if(BangleJsInstalled.value == true)
+            writeScreenWithData(view)
+        else {
+            noHeader.visibility = VISIBLE
+
+            tutorial.visibility = VISIBLE
+            tutorial.movementMethod = LinkMovementMethod.getInstance()
+
+            restartBtn.visibility = VISIBLE
+            restartBtn.setOnClickListener(restartBtnListener)
+        }
+
+        BangleJsInstalled.observe(viewLifecycleOwner) {
+            if(it == true)
+                writeScreenWithData(view)
+        }
+    }
+
+    private fun writeScreenWithData(view: View) {
         val writingInfo: TextView = view.findViewById(R.id.writingInfo_banglejs)
         val sensorId: TextView = view.findViewById(R.id.sensorIdToBeWritten_banglejs)
         val apiEndpoint: TextView = view.findViewById(R.id.apiEndpointToBeWritten_banglejs)
@@ -55,38 +83,35 @@ class BangleJsNotLikeThisFragment : Fragment() {
         val tutorial: TextView = view.findViewById(R.id.tutorial_banglejs)
         val restartBtn: Button = view.findViewById(R.id.restart_btn_banglejs)
 
-        if(fromIntent) {
-            writingInfo.visibility = VISIBLE
-            writingInfo.text =
-                getString(R.string.the_following_will_be_written, "your Bangle.JS")
 
-            sensorId.visibility = VISIBLE
-            sensorId.text =
-                getString(R.string.sensor_id_to_be_written, sensorIdValue)
+        // Hide the other stuff if it was visible
+        noHeader.visibility = INVISIBLE
+        tutorial.visibility = INVISIBLE
+        restartBtn.visibility = INVISIBLE
 
-            apiEndpoint.visibility = VISIBLE
-            apiEndpoint.text =
-                getString(R.string.api_endpoint_to_be_written, apiEndpointValue)
 
-            pleaseConfirm.visibility = VISIBLE
+        // Unhide the correct stuff
+        writingInfo.visibility = VISIBLE
+        writingInfo.text =
+            getString(R.string.the_following_will_be_written, "your Bangle.JS")
 
-            confirmed.visibility = VISIBLE
+        sensorId.visibility = VISIBLE
+        sensorId.text =
+            getString(R.string.sensor_id_to_be_written, sensorIdValue)
 
-            restart.visibility = VISIBLE
-            restart.setOnClickListener(restartBtnWithIntentListener)
+        apiEndpoint.visibility = VISIBLE
+        apiEndpoint.text =
+            getString(R.string.api_endpoint_to_be_written, apiEndpointValue)
 
-            confirm.visibility = VISIBLE
-            confirm.setOnClickListener(continueBtnListener)
-        } else {
-            noHeader.visibility = VISIBLE
+        pleaseConfirm.visibility = VISIBLE
 
-            tutorial.visibility = VISIBLE
-            tutorial.movementMethod = LinkMovementMethod.getInstance()
+        confirmed.visibility = VISIBLE
 
-            restartBtn.visibility = VISIBLE
-            restartBtn.setOnClickListener(restartBtnListener)
-        }
+        restart.visibility = VISIBLE
+        restart.setOnClickListener(restartBtnWithIntentListener)
 
+        confirm.visibility = VISIBLE
+        confirm.setOnClickListener(continueBtnListener)
     }
 
     private val continueBtnListener = OnClickListener {

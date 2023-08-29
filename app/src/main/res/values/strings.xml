@@ -79,6 +79,8 @@
     <!-- Done -->
     <string name="congratulations_text">You\'re done! Your device has been onboarded to dec4IoT.\n\nPlease restart your device.\nTo restart your Puck.Js take the battery out of it\'s compartment, wait 10 seconds and put it back in!\nTo restart your Bangle.Js press the button until \"Reloading…\" appears!\n\nHave fun!</string>
     <string name="done_btn">Setup new device</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 
 </resources>

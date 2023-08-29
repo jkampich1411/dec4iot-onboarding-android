@@ -46,7 +46,6 @@ class PuckJsWritingFragment : Fragment() {
     private var restartButton: Button? = null
     private var continueButton: Button? = null
 
-    private val leDevice = MutableLiveData<BluetoothDevice>()
     private var leGatt: BluetoothGatt? = null
     private var leService: BluetoothGattService? = null
     private val serviceDisc = MutableLiveData(false)
@@ -95,11 +94,6 @@ class PuckJsWritingFragment : Fragment() {
 
         espruino.addCallback(scanCallback)
         espruino.startScanning(puckJsMac)
-
-        leDevice.observeForever {
-            it.connectGatt(requireActivity().applicationContext, false, gattCallback)
-            espruino.stopScanning()
-        }
 
         serviceDisc.observeForever {
             if(it == true) {
@@ -220,10 +214,12 @@ class PuckJsWritingFragment : Fragment() {
     }
 
     private val scanCallback = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
 
-            leDevice.postValue(result!!.device)
+            result!!.device.connectGatt(requireActivity().applicationContext, false, gattCallback)
+            espruino.stopScanning()
         }
 
         override fun onScanFailed(errorCode: Int) {
