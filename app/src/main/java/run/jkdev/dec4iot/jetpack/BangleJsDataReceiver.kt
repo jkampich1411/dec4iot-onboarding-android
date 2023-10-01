@@ -7,6 +7,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
+import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.work.*
@@ -18,12 +19,21 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import com.google.gson.Gson
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import run.jkdev.dec4iot.jetpack.enums.LocationType
+import run.jkdev.dec4iot.jetpack.gms.CellGeoloc
+import run.jkdev.dec4iot.jetpack.gms.Result
 import run.jkdev.dec4iot.jetpack.gsonmodels.BangleJsSendData
 import run.jkdev.dec4iot.jetpack.gsonmodels.BangleJsSendDataData
 import run.jkdev.dec4iot.jetpack.gsonmodels.BangleJsSendDataInfo
+import run.jkdev.dec4iot.jetpack.gsonmodels.CellInfo
+import run.jkdev.dec4iot.jetpack.gsonmodels.MLSResponse
+import run.jkdev.dec4iot.jetpack.gsonmodels.NetworkInfo
 import run.jkdev.dec4iot.jetpack.gsonmodels.SenmlField
 import java.io.IOException
 import java.time.Instant
@@ -34,6 +44,9 @@ class BangleJsDataReceiver : BroadcastReceiver() {
     private val gson = Gson()
 
     private lateinit var locationClient: FusedLocationProviderClient
+    private lateinit var telephonyManager: TelephonyManager
+    private lateinit var cellGeoloc: CellGeoloc
+
     private lateinit var locationTask: Task<Location>
 
     private lateinit var info: BangleJsSendDataInfo
@@ -45,6 +58,8 @@ class BangleJsDataReceiver : BroadcastReceiver() {
         if(context == null || intent == null) { return }
 
         if(intent.action === "me.byjkdev.dec4iot.intents.banglejs.SEND_DATA") {
+            Log.i(TAG, "Intent received!!!!")
+
             val data = intent.getStringExtra("json_data")
             val jsonData: BangleJsSendData = gson.fromJson(data, BangleJsSendData::class.java)
 
@@ -52,15 +67,13 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             sensors = jsonData.data
 
             locationClient = LocationServices.getFusedLocationProviderClient(context)
+            telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            cellGeoloc = CellGeoloc(telephonyManager)
 
             this.context = context
 
-            if (checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return
-            }
-
             idField = SenmlField(
-                base_name = "urn:dev:mac:${formatMacAddress(info.mac_address)}",
+                base_name = "urn:dev:mac:${formatMacAddress(info.mac_address)}:",
                 base_time = getCurrentEpochSecond(),
 
                 name = "identifier",
@@ -148,7 +161,7 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             val jsonObject = gson.toJson(fields)
 
             val inputData = Data.Builder()
-                .putString("endpoint", "https://www.${info.sensor_endpoint}")
+                .putString("endpoint", "https://${info.sensor_endpoint}")
                 .putString("json", jsonObject.toString())
                 .build()
 
@@ -162,46 +175,66 @@ class BangleJsDataReceiver : BroadcastReceiver() {
                 .getInstance(this@BangleJsDataReceiver.context)
                 .enqueue(workRequest)
 
-            val locationRequest = CurrentLocationRequest.Builder()
-                .setGranularity(Granularity.GRANULARITY_FINE)
-                .setMaxUpdateAgeMillis(0)
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .setDurationMillis(Long.MAX_VALUE)
-                .build()
 
+            // MLS Location is ALWAYS sent
+            val network = cellGeoloc.getNetworkInfo()
+            val cells = cellGeoloc.getCells()
 
-            locationTask = locationClient.getCurrentLocation(locationRequest, null)
-            locationTask.addOnFailureListener {
+            mlsLocationRequest(network, cells)
+
+            // Live Location allowed?
+            if (checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                val locationRequest = CurrentLocationRequest.Builder()
+                    .setGranularity(Granularity.GRANULARITY_FINE)
+                    .setMaxUpdateAgeMillis(0)
+                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                    .setDurationMillis(Long.MAX_VALUE)
+                    .build()
+
+                locationTask = locationClient.getCurrentLocation(locationRequest, null)
+                locationTask.addOnFailureListener {
+                    locationTask = locationClient.lastLocation
+                    locationTask.addOnSuccessListener(lastLocationOnSuccessListener)
+                }
+                locationTask.addOnSuccessListener(locationOnSuccessListener)
+            } else {
+                // If no Live Location Permission, then try LastLocation; This doesn't require Live Location Perm
                 locationTask = locationClient.lastLocation
                 locationTask.addOnSuccessListener(lastLocationOnSuccessListener)
             }
-            locationTask.addOnSuccessListener(locationOnSuccessListener)
-
         }
     }
 
     @SuppressLint("MissingPermission")
-    private val locationOnSuccessListener = OnSuccessListener<Location> {
+    private val locationOnSuccessListener = OnSuccessListener<Location?> {
         if (it == null) {
             locationTask = locationClient.lastLocation
             locationTask.addOnSuccessListener(lastLocationOnSuccessListener)
             return@OnSuccessListener
         }
 
-        latLongFieldsArrived(it.latitude, it.longitude)
+        latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, it.elapsedRealtimeAgeMillis, LocationType.GPS_CURRENT_LOCATION)
 
     }
 
-    private val lastLocationOnSuccessListener = OnSuccessListener<Location> {
-        if(it == null) {
-            latLongFieldsArrived(0.0, 0.0)
-            return@OnSuccessListener
+    private val lastLocationOnSuccessListener = OnSuccessListener<Location?> {
+        if(it != null)
+            latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, it.elapsedRealtimeAgeMillis, LocationType.GPS_LAST_LOCATION)
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun mlsLocationRequest(networkInfo: NetworkInfo, cells: List<CellInfo>) {
+        GlobalScope.launch {
+            when(val result = cellGeoloc.requestGeolocation(networkInfo, cells)) {
+                is Result.Success<MLSResponse> -> latLongFieldsArrived(result.data.location.latitude, result.data.location.longitude, result.data.accuracy, 0, LocationType.MLS_LOCATION_VIA_CELL_TOWERS)
+                is Result.Error -> {
+                    Log.e(TAG, "MLS request threw", result.exception)
+                }
+            }
         }
-
-        latLongFieldsArrived(it.latitude, it.longitude)
     }
 
-    private fun latLongFieldsArrived(lat: Number, long: Number) {
+    private fun latLongFieldsArrived(lat: Number, long: Number, accuracy: Number, msElapsedSince: Number, source: LocationType) {
         val idFieldNew = idField
         idFieldNew.base_time = getCurrentEpochSecond()
 
@@ -216,14 +249,31 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             SenmlField(
                 name = "longitude",
                 value = long,
-                unit = "long"
+                unit = "lon"
+            ),
+
+            SenmlField(
+                name = "accuracy",
+                value = accuracy,
+                unit = "m"
+            ),
+
+            SenmlField(
+                name = "timestamp",
+                value = msElapsedSince.toFloat() / 1000.toFloat(),
+                unit = "s"
+            ),
+
+            SenmlField(
+                name = "source",
+                value = source.toInt()
             )
         )
 
         val jsonObject = gson.toJson(fields)
 
         val inputData = Data.Builder()
-            .putString("endpoint", "https://www.${info.sensor_endpoint}")
+            .putString("endpoint", "https://${info.sensor_endpoint}")
             .putString("json", jsonObject.toString())
             .build()
 
@@ -274,7 +324,7 @@ class BangleJsDataReceiver : BroadcastReceiver() {
                         Log.i(TAG, "type: ${response.request.method}")
                         Log.i(TAG, "code: ${response.code}")
                         Log.i(TAG, "headers: ${response.headers}")
-                        Log.i(TAG, "data ${response.body.toString()}")
+                        Log.i(TAG, "data ${response.body!!.string()}")
                         response.close()
                     }
                 })
@@ -288,10 +338,8 @@ class BangleJsDataReceiver : BroadcastReceiver() {
     }
 }
 
-fun getCurrentEpochSecond(): String {
-    val epochSecond = Instant.now().epochSecond.toDouble()
-
-    return "%1.9e".format(epochSecond)
+fun getCurrentEpochSecond(): Double {
+    return Instant.now().epochSecond.toDouble()
 }
 
 fun formatMacAddress(macAddress: String): String {

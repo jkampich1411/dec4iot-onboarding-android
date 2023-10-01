@@ -107,6 +107,8 @@ class MainActivity : AppCompatActivity() {
             if(intent.data!!.host == "dec4iot.data-container.net")
                 parseAppLink(intent.dataString!!)
         }
+
+
     }
 
     private val discoveryListener = object : NsdManager.DiscoveryListener {
@@ -239,10 +241,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun parseAppLink(data: String) {
-        val b64String = data.split("?d=")[1]
+    private fun parseAppLink(original_data: String) {
+        val b64String = original_data.split("?d=")[1]
         val b64Decoded = b64String.decodeBase64()
-        val data = b64Decoded.toString()
+        val data: String = b64Decoded.toString()
             .removePrefix("[text=")
             .removeSuffix("]")
 
@@ -379,7 +381,8 @@ private val REQUIRED_PERMISSIONS = if (Build.VERSION.SDK_INT >= 31) {
         Manifest.permission.INTERNET,
         Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
         Manifest.permission.ACCESS_WIFI_STATE,
-        Manifest.permission.CHANGE_WIFI_STATE
+        Manifest.permission.CHANGE_WIFI_STATE,
+        Manifest.permission.READ_PHONE_STATE
     ).toTypedArray()
 } else {
     listOf (
@@ -392,7 +395,8 @@ private val REQUIRED_PERMISSIONS = if (Build.VERSION.SDK_INT >= 31) {
         Manifest.permission.INTERNET,
         Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
         Manifest.permission.ACCESS_WIFI_STATE,
-        Manifest.permission.CHANGE_WIFI_STATE
+        Manifest.permission.CHANGE_WIFI_STATE,
+        Manifest.permission.READ_PHONE_STATE
     ).toTypedArray()
 }
 
