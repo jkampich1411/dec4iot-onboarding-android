@@ -1,12 +1,14 @@
 package run.jkdev.dec4iot.jetpack
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.Manifest
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
+import android.os.SystemClock
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.content.ContextCompat.checkSelfPermission
@@ -16,12 +18,14 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.OnSuccessListener
 import com.google.gson.Gson
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -171,10 +175,23 @@ class BangleJsDataReceiver : BroadcastReceiver() {
                     .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                     .build()
 
-            WorkManager
+            val operation = WorkManager
                 .getInstance(this@BangleJsDataReceiver.context)
                 .enqueue(workRequest)
 
+            val workInfo = WorkManager
+                .getInstance(this@BangleJsDataReceiver.context)
+                .getWorkInfoById(workRequest.id)
+
+            val workInfoListener = Runnable {
+                val info = workInfo.get()
+                Log.i(TAG, info.state.name)
+
+                sendMessageBox("", "Your call should've been sent! ATTENTION: This is a test! Your call might've not gone through!")
+
+            }
+
+            operation.result.addListener(workInfoListener, context.mainExecutor)
 
             // MLS Location is ALWAYS sent
             val network = cellGeoloc.getNetworkInfo()
@@ -213,20 +230,41 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             return@OnSuccessListener
         }
 
-        latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, it.elapsedRealtimeAgeMillis, LocationType.GPS_CURRENT_LOCATION)
+        if(Build.VERSION.SDK_INT >= 33) {
+            latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, it.elapsedRealtimeAgeMillis, LocationType.GPS_CURRENT_LOCATION)
+        } else {
+            val nsElapsedSinceSysBoot = SystemClock.elapsedRealtimeNanos()
+            val nsElapsedSinceLoc = it.elapsedRealtimeNanos
+            val msLocationAge = (nsElapsedSinceSysBoot - nsElapsedSinceLoc) / 1000000
+
+            latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, msLocationAge, LocationType.GPS_CURRENT_LOCATION)
+        }
 
     }
 
     private val lastLocationOnSuccessListener = OnSuccessListener<Location?> {
-        if(it != null)
+        if(it == null) return@OnSuccessListener
+        if(Build.VERSION.SDK_INT >= 33) {
             latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, it.elapsedRealtimeAgeMillis, LocationType.GPS_LAST_LOCATION)
+        } else {
+            val nsElapsedSinceSysBoot = SystemClock.elapsedRealtimeNanos()
+            val nsElapsedSinceLoc = it.elapsedRealtimeNanos
+            val msLocationAge = (nsElapsedSinceSysBoot - nsElapsedSinceLoc) / 1000000
+
+            latLongFieldsArrived(it.latitude, it.longitude, it.accuracy, msLocationAge, LocationType.GPS_LAST_LOCATION)
+        }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun mlsLocationRequest(networkInfo: NetworkInfo, cells: List<CellInfo>) {
+        if (
+            checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) return
+
         GlobalScope.launch {
             when(val result = cellGeoloc.requestGeolocation(networkInfo, cells)) {
-                is Result.Success<MLSResponse> -> latLongFieldsArrived(result.data.location.latitude, result.data.location.longitude, result.data.accuracy, 0, LocationType.MLS_LOCATION_VIA_CELL_TOWERS)
+                is Result.Success<MLSResponse> -> latLongFieldsArrived(result.data.location.latitude, result.data.location.longitude, result.data.accuracy, 1, LocationType.MLS_LOCATION_VIA_CELL_TOWERS)
                 is Result.Error -> {
                     Log.e(TAG, "MLS request threw", result.exception)
                 }
@@ -277,64 +315,64 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             .putString("json", jsonObject.toString())
             .build()
 
-        val workRequest: WorkRequest =
+        val workRequest: OneTimeWorkRequest =
             OneTimeWorkRequestBuilder<UploadWorker>()
                 .setInputData(inputData)
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
+
 
         WorkManager
             .getInstance(this@BangleJsDataReceiver.context)
             .enqueue(workRequest)
     }
 
-    class UploadWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+    private fun sendMessageBox(title: String, message: String) {
+        val sendMsgIntent = Intent("com.banglejs.uart.tx")
+        sendMsgIntent.putExtra("line", "E.showMessage(\"$message\", \"$title\")")
+
+        context.sendBroadcast(sendMsgIntent)
+    }
+
+    class UploadWorker(appContext: Context, workerParams: WorkerParameters) : CoroutineWorker(appContext, workerParams) {
         private val okHttpClient = OkHttpClient()
 
-        override fun getForegroundInfo(): ForegroundInfo {
+        override suspend fun getForegroundInfo(): ForegroundInfo {
             Log.i(TAG, "Foreground Job Started for UploadWorker")
             return super.getForegroundInfo()
         }
 
-        override fun doWork(): Result {
+        override suspend fun doWork(): Result {
             val request = Request.Builder()
                 .tag(TAG)
                 .url(inputData.getString("endpoint")!!)
                 .post(inputData.getString("json")!!.toRequestBody("application/json".toMediaType()))
                 .build()
 
-            val http = sendHttpRequest(request)
-            return if(http is Result) {
-                http
-            } else {
-                Result.success()
-            }
+            return sendHttpRequest(request)
         }
 
-        private fun sendHttpRequest(request: Request): Result? {
-            try {
-                okHttpClient.newCall(request).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        Log.e(TAG, "HTTP Request threw:\n${e.stackTrace}")
-                        throw Exception("HTTP Request threw", e)
-                    }
+        private suspend fun sendHttpRequest(request: Request): Result {
+            return withContext(Dispatchers.IO) {
+                try {
+                    val response = okHttpClient.newCall(request).execute()
+                    val workResultData = workDataOf(
+                        Pair("code", response.code),
+                        Pair("response", response.body!!.string())
+                    )
+                    response.close()
 
-                    override fun onResponse(call: Call, response: Response) {
-                        Log.i(TAG, "HTTP Request returned response:\n${response}")
-                        Log.i(TAG, "type: ${response.request.method}")
-                        Log.i(TAG, "code: ${response.code}")
-                        Log.i(TAG, "headers: ${response.headers}")
-                        Log.i(TAG, "data ${response.body!!.string()}")
-                        response.close()
-                    }
-                })
-            } catch (e: Exception) {
-                return Result.failure()
+                    return@withContext if(response.code in 200..299) { Result.success(workResultData) }
+                    else { Result.failure(workResultData) }
+
+                } catch (e: IOException) {
+                    Log.e(TAG, "HTTP Request threw", e)
+                    return@withContext Result.failure(
+                        workDataOf(Pair("Exception", e))
+                    )
+                }
             }
-
-            return null
         }
-
     }
 }
 

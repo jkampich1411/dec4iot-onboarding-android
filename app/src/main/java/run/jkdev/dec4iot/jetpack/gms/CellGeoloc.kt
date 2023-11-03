@@ -19,6 +19,7 @@ import run.jkdev.dec4iot.jetpack.gsonmodels.CellGeolocPayload
 import run.jkdev.dec4iot.jetpack.gsonmodels.CellInfo
 import run.jkdev.dec4iot.jetpack.gsonmodels.MLSResponse
 import run.jkdev.dec4iot.jetpack.gsonmodels.NetworkInfo
+import java.io.IOException
 
 class CellGeoloc constructor(private val mgr: TelephonyManager) {
 
@@ -131,14 +132,20 @@ class CellGeoloc constructor(private val mgr: TelephonyManager) {
             .build()
 
         return withContext(Dispatchers.IO) {
-            val response = OkHttpClient().newCall(req).execute()
-            if (response.code != 200) {
-                Log.e(TAG, response.body!!.string())
-                return@withContext Result.Error(Exception("MLS returned ${response.code}"))
-            }
+            try {
+                val response = OkHttpClient().newCall(req).execute()
+                if (response.code != 200) {
+                    Log.e(TAG, response.body!!.string())
+                    return@withContext Result.Error(Exception("MLS returned ${response.code}"))
+                }
 
-            val mls = Gson().fromJson(response.body?.string(), MLSResponse::class.java)
-            return@withContext Result.Success(mls)
+                val mls = Gson().fromJson(response.body?.string(), MLSResponse::class.java)
+                return@withContext Result.Success(mls)
+
+            } catch (e: IOException) {
+                Log.e(TAG, "HTTP Request threw", e)
+                return@withContext Result.Error(e)
+            }
         }
     }
 

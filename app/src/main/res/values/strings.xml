@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">dec4IoT Onboarding</string>
+    <string name="app_name" translatable="false">dec4IoT</string>
 
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">dec4IoT Onboarding</string>

@@ -177,6 +177,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
+        checkPermissions(true)
+        checkBackgroundLocationPermission(true)
+
         if(nfcSupported) {
 
             val intentSingleTop = Intent(this, javaClass).apply {
@@ -303,8 +306,8 @@ class MainActivity : AppCompatActivity() {
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_check_modules -> checkBarcodeScanningAvailable()
-            R.id.action_check_permissions -> checkPermissions()
-            R.id.action_check_backgroundloc -> checkBackgroundLocationPermission()
+            R.id.action_check_permissions -> checkPermissions(false)
+            R.id.action_check_backgroundloc -> checkBackgroundLocationPermission(false)
             R.id.action_check_batopt -> checkBatteryOptimizations()
             else -> super.onOptionsItemSelected(item)
         }
@@ -327,9 +330,9 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun checkPermissions(): Boolean {
+    private fun checkPermissions(silent: Boolean): Boolean {
         if(allPermGranted(applicationContext)) {
-            Toast.makeText(applicationContext, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
+            if(!silent) Toast.makeText(applicationContext, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
         } else {
             requestPermissions(REQUIRED_PERMISSIONS, REQUIRED_PERMISSION_CODE)
         }
@@ -338,9 +341,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("InlinedApi")  // API level gets checked with `backgroundLocPermGranted()`
-    private fun checkBackgroundLocationPermission(): Boolean {
+    private fun checkBackgroundLocationPermission(silent: Boolean): Boolean {
         if(backgroundLocPermGranted(applicationContext)) {
-            Toast.makeText(applicationContext, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
+            if(!silent) Toast.makeText(applicationContext, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
         } else {
             if(shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
                 Toast.makeText(applicationContext, R.string.why_we_need_perm_bgloc, Toast.LENGTH_LONG).show()
