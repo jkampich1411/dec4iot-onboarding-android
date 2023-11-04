@@ -167,6 +167,8 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             val inputData = Data.Builder()
                 .putString("endpoint", "https://${info.sensor_endpoint}")
                 .putString("json", jsonObject.toString())
+                .putString("bangleMessage", "Your emergency call succeeded.")
+                .putBoolean("shouldMessageBangle", true)
                 .build()
 
             val workRequest: WorkRequest =
@@ -186,8 +188,6 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             val workInfoListener = Runnable {
                 val info = workInfo.get()
                 Log.i(TAG, info.state.name)
-
-                sendMessageBox("", "Your call should've been sent! ATTENTION: This is a test! Your call might've not gone through!")
 
             }
 
@@ -327,15 +327,17 @@ class BangleJsDataReceiver : BroadcastReceiver() {
             .enqueue(workRequest)
     }
 
-    private fun sendMessageBox(title: String, message: String) {
-        val sendMsgIntent = Intent("com.banglejs.uart.tx")
-        sendMsgIntent.putExtra("line", "E.showMessage(\"$message\", \"$title\")")
-
-        context.sendBroadcast(sendMsgIntent)
-    }
-
-    class UploadWorker(appContext: Context, workerParams: WorkerParameters) : CoroutineWorker(appContext, workerParams) {
+    class UploadWorker(private val appContext: Context, workerParams: WorkerParameters) : CoroutineWorker(appContext, workerParams) {
         private val okHttpClient = OkHttpClient()
+        private var shouldMessageBangle = false
+        private var bangleMessage: String? = ""
+
+        private fun sendMessageBox(title: String, message: String) {
+            val sendMsgIntent = Intent("com.banglejs.uart.tx")
+            sendMsgIntent.putExtra("line", "E.showMessage(\"$message\", \"$title\");Bangle.buzz(1000, 100)")
+
+            appContext.sendBroadcast(sendMsgIntent)
+        }
 
         override suspend fun getForegroundInfo(): ForegroundInfo {
             Log.i(TAG, "Foreground Job Started for UploadWorker")
@@ -343,6 +345,9 @@ class BangleJsDataReceiver : BroadcastReceiver() {
         }
 
         override suspend fun doWork(): Result {
+            this.shouldMessageBangle = inputData.getBoolean("shouldMessageBangle", false)
+            this.bangleMessage = inputData.getString("bangleMessage")
+
             val request = Request.Builder()
                 .tag(TAG)
                 .url(inputData.getString("endpoint")!!)
@@ -362,8 +367,13 @@ class BangleJsDataReceiver : BroadcastReceiver() {
                     )
                     response.close()
 
-                    return@withContext if(response.code in 200..299) { Result.success(workResultData) }
-                    else { Result.failure(workResultData) }
+                    if(response.code in 200..299) {
+                        if (shouldMessageBangle && bangleMessage != null) sendMessageBox("", bangleMessage!!)
+                        return@withContext Result.success(workResultData)
+                    } else {
+                        sendMessageBox("FUCK", "A request failed, please call emergency services from your phone!!")
+                        return@withContext Result.failure(workResultData)
+                    }
 
                 } catch (e: IOException) {
                     Log.e(TAG, "HTTP Request threw", e)

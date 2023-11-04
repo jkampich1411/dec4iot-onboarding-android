@@ -1,12 +1,17 @@
 package run.jkdev.dec4iot.jetpack.gms
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.telephony.CellIdentityGsm
 import android.telephony.CellIdentityLte
 import android.telephony.CellIdentityWcdma
+import android.telephony.CellInfoGsm
+import android.telephony.CellInfoLte
+import android.telephony.CellInfoWcdma
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,11 +25,19 @@ import run.jkdev.dec4iot.jetpack.gsonmodels.CellInfo
 import run.jkdev.dec4iot.jetpack.gsonmodels.MLSResponse
 import run.jkdev.dec4iot.jetpack.gsonmodels.NetworkInfo
 import java.io.IOException
+import java.lang.Error
 
 class CellGeoloc constructor(private val mgr: TelephonyManager) {
 
+    fun getCells(): List<CellInfo> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { getCellsApiHE30() } else { getCellsApiL30() }
+    }
+
     @SuppressLint("MissingPermission")
-    fun getCells(): List<CellInfo>{
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun getCellsApiHE30(): List<CellInfo> {
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+            throw Error("getCellsApiL30() should only be used for API >= 30")
         val cellsList = mutableListOf<CellInfo>()
         val cellInfo = mgr.allCellInfo
 
@@ -87,6 +100,86 @@ class CellGeoloc constructor(private val mgr: TelephonyManager) {
                         cellId = lteCell.ci,
                         locationAreaCode = lteCell.tac,
                         signalStrength = cell.cellSignalStrength.dbm,
+                        lastDetectionMs = null,
+                        timingAdvance = null
+                    )
+
+                    cellsList.add(info)
+                }
+            }
+        }
+
+        return cellsList
+    }
+
+    @SuppressLint("MissingPermission")
+    fun getCellsApiL30(): List<CellInfo> {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            throw Error("getCellsApiL30() should only be used for API < 30")
+
+        val cellsList = mutableListOf<CellInfo>()
+        val cellInfo = mgr.allCellInfo
+
+        cellInfo.forEach {
+            when(it::class.java) {
+                CellInfoGsm::class.java -> {
+                    val gsmInfo = it as CellInfoGsm
+                    val gsmCell = gsmInfo.cellIdentity
+
+                    if(gsmCell.mccString == null || gsmCell.mncString == null || gsmCell.cid == android.telephony.CellInfo.UNAVAILABLE || gsmCell.lac == android.telephony.CellInfo.UNAVAILABLE) {
+                        return@forEach
+                    }
+
+                    val info = CellInfo(
+                        radioType = "gsm",
+                        mcc = gsmCell.mccString!!.toInt(),
+                        mnc = gsmCell.mncString!!.toInt(),
+                        cellId = gsmCell.cid,
+                        locationAreaCode = gsmCell.lac,
+                        signalStrength = gsmInfo.cellSignalStrength.dbm,
+                        lastDetectionMs = null,
+                        timingAdvance = null
+                    )
+
+                    cellsList.add(info)
+
+                }
+                CellInfoWcdma::class.java -> {
+                    val wcdmaInfo = it as CellInfoWcdma
+                    val wcdmaCell = wcdmaInfo.cellIdentity
+
+                    if(wcdmaCell.mccString == null || wcdmaCell.mncString == null || wcdmaCell.cid == android.telephony.CellInfo.UNAVAILABLE || wcdmaCell.lac == android.telephony.CellInfo.UNAVAILABLE) {
+                        return@forEach
+                    }
+
+                    val info = CellInfo(
+                        radioType = "wcdma",
+                        mcc = wcdmaCell.mccString!!.toInt(),
+                        mnc = wcdmaCell.mncString!!.toInt(),
+                        cellId = wcdmaCell.cid,
+                        locationAreaCode = wcdmaCell.lac,
+                        signalStrength = wcdmaInfo.cellSignalStrength.dbm,
+                        lastDetectionMs = null,
+                        timingAdvance = null
+                    )
+
+                    cellsList.add(info)
+                }
+                CellInfoLte::class.java -> {
+                    val lteInfo = it as CellInfoLte
+                    val lteCell = lteInfo.cellIdentity
+
+                    if(lteCell.mccString == null || lteCell.mncString == null || lteCell.ci == android.telephony.CellInfo.UNAVAILABLE || lteCell.tac == android.telephony.CellInfo.UNAVAILABLE) {
+                        return@forEach
+                    }
+
+                    val info = CellInfo(
+                        radioType = "lte",
+                        mcc = lteCell.mccString!!.toInt(),
+                        mnc = lteCell.mncString!!.toInt(),
+                        cellId = lteCell.ci,
+                        locationAreaCode = lteCell.tac,
+                        signalStrength = lteInfo.cellSignalStrength.dbm,
                         lastDetectionMs = null,
                         timingAdvance = null
                     )
