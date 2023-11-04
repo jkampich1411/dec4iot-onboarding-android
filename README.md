@@ -13,7 +13,11 @@ Content:
 
 ### Deployment
 
-Either clone this Repo or download the Repository's Zip File.
+Either download a prebuild APK from GitHub Actions, clone this Repo or download the Repository's Zip File.
+
+#### Download prebuilt APK
+In the "[Generate APK](https://github.com/jkampich1411/dec4iot-onboarding-android/actions/workflows/build-android-app.yml)" Action, choose the latest Actions Run and download the Artifact ZIP.
+In there you will find an "app-debug.apk", which you can deploy onto your devices.
 
 #### Building from Android Studio
 After cloning this Repo / downloading the ZIP, open it in [Android Studio](https://developer.android.com/studio), export an APK via "Build" > "Build Bundle(s) / APK(s)" > "Build APK(s)".
